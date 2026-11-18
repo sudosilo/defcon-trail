@@ -199,17 +199,18 @@ const L=[
   {n:"DEF CON Closing Ceremonies",at:110000,tags:["con","dc","end"],d:"Black Badges, contest winners, and the long goodbye."}
 ];
 
-const KIT2600={water:20,snacks:30,drinks:10,bank:2,cable:3,burner:1};
-const KIT_TEXT="2600 list: burner phone, two power banks, three cables, water, snacks, a little booze.";
+const KIT2600={water:24,snacks:30,drinks:10,deo:2,bank:2,cable:3,burner:1};
+const KIT_TEXT="2600 list: deodorant, burner phone, two power banks, three cables, water, snacks, a little booze.";
 const SHOPS={
-  airport:{name:"Airport Newsstand",items:["water","snacks","drinks","bank","cable","burner"],mult:1.25},
-  strip:{name:"Strip Convenience Store",items:["water","snacks","drinks","bank","cable","burner"],mult:1.1},
+  airport:{name:"Airport Newsstand",items:["water","snacks","drinks","deo","bank","cable","burner"],mult:1.25},
+  strip:{name:"Strip Convenience Store",items:["water","snacks","drinks","deo","bank","cable","burner"],mult:1.1},
   linecon:{name:"LineCon Badge Table and Merch Line",items:["badge","merch","water","snacks"],mult:1}
 };
 const ITEMS={
   water:{n:"Water bottles",p:3,u:"each",max:99},
   snacks:{n:"Snacks and protein bars",p:5,u:"each",max:99},
   drinks:{n:"Booze",p:11,u:"each",max:99},
+  deo:{n:"Deodorant",p:7,u:"each, please",max:9},
   bank:{n:"Power bank",p:45,u:"each",max:9},
   cable:{n:"Charging cable",p:18,u:"each",max:9},
   burner:{n:"Burner phone",p:65,u:"each",max:3},
@@ -245,7 +246,8 @@ const TIPS=[
   "Lockpick Village will teach you to open a padlock faster than you think.",
   "Hydrate. The Vegas heat does not care that you spend most of the day indoors.",
   "Do not plug your phone into a random USB port. Juice jacking is a meme for a reason.",
-  "First timer? Go with the 2600 list. Burner phone, power banks, spare cables, water, snacks, and cash for the badge.",
+  "Pack deodorant. Thirty thousand hackers in one building in August. Please.",
+  "First timer? Go with the 2600 list. Deodorant, burner phone, power banks, spare cables, water, snacks, and cash for the badge.",
   "Real hackers carry a power bank, a backup power bank, and a cable for each one.",
   "BSides Las Vegas is free to attend, so get in line early for the talks you want.",
   "Black Hat is the suits. DEF CON is the t-shirts.",
@@ -263,11 +265,11 @@ const TIPS=[
 ];
 
 const PARTIES=[
-  {id:"bpool",n:"BSides Pool Party",days:[0,1],need:null,d:"Pool water, cheap beer, and talk about the talks you missed."},
+  {id:"bpool",n:"BSides Pool Party",days:[0,1],need:null,d:"The iconic BSides Las Vegas pool party. Pool water, cold drinks, and talk about the talks you missed."},
   {id:"vroof",n:"Vendor Rooftop Party",days:[1,2,3,4],need:"vendor",d:"Open bar, sliders, and a sales rep who wants your email."},
   {id:"lonely",n:"Lonely Hackers Club Meetup",days:[2,3],need:null,d:"For folks who came solo and want a crew."},
   {id:"karaoke",n:"Hacker Karaoke",days:[3,4],need:null,d:"Terrible singing, incredible energy."},
-  {id:"queer",n:"Queercon Mixer",days:[3,4],need:null,d:"One of the friendliest rooms of the whole week."},
+  {id:"queer",n:"Queercon Pool Party",days:[3,4],need:null,d:"An iconic DEF CON tradition. Pool, music, and the friendliest crowd of the week."},
   {id:"phreak",n:"Telephreak Party at Caesars",days:[4,5],need:"phreak",d:"Old phones, old legends, and a payphone that still works."},
   {id:"goth",n:"Goth Con",days:[4,5],need:"black",d:"Dress code is black. A hacker shirt counts."},
   {id:"jeop",n:"Hacker Jeopardy",days:[5],need:"badge",d:"Saturday night tradition. You need your badge to get in."},
@@ -296,7 +298,7 @@ function newState(profKey,handles,groups){
   const party=handles.map((h,i)=>({h:h||("hacker"+i),g:(groups&&groups[i])||"DC702",hp:100,sick:null,inj:null,lost:false,gone:false,ctf:false}));
   return {
     v:1,prof:profKey,mult:p.mult,cash:p.cash,room:p.room,
-    party,water:0,snacks:0,drinks:0,banks:0,cables:0,phones:[100],
+    party,water:0,snacks:0,drinks:0,deo:0,banks:0,badgeDead:false,cables:0,phones:[100],
     badge:false,blackBadge:false,lockpick:false,
     shirts:0,stickers:0,sao:0,badges:0,celebs:0,parties:[],
     invites:[],vibes:70,
@@ -389,7 +391,7 @@ const EV=[
   {w:t=>S.banks>0?.5:0,f(){S.banks--;return "A power bank swelled up like a pillow. You leave it in a hotel trash can very carefully.";}},
   {w:t=>t.includes("casino")?.8:.3,f(){const c=Math.min(S.cash,R(40,140));S.cash-=c;return "Pickpocket on the casino floor. You lost $"+c+".";}},
   {w:t=>.35,f(){const c=Math.min(S.cash,150);S.cash-=c;return "You used a casino ATM during con week. It was skimmed. You lost $"+c+" and every hacker who hears about it laughs at you.";}},
-  {w:t=>t.includes("con")?.8:0,f(){S.vibes-=8;return "Your cleartext password just showed up on the Wall of Sheep. Everyone in the room is looking at you.";}},
+  {w:t=>t.includes("con")?.8:0,f(){S.vibes-=16;drainPhone(12);return "Busted. Your cleartext password is up on the Wall of Sheep for the whole room to see. Your crew is taking photos of it. You spend the next hour changing every password you own.";}},
   {w:t=>.6,f(){drainPhone(15);S.vibes-=6;return "You joined the hotel Wi-Fi. Your phone made a lot of new friends and burned through battery doing it.";}},
   {w:t=>t.includes("con")?1.2:.5,f(){const c=Math.min(S.cash,R(20,60));S.cash-=c;S.badges++;return "A badgelife maker sold you a hand soldered hacker badge out of a backpack for $"+c+". It blinks.";}},
   {w:t=>t.includes("con")?1.4:.6,f(){const n=R(1,3);S.sao+=n;return "You traded stickers for "+n+" SAO"+(n>1?"s":"")+". Your badge looks more like a tiny city every hour.";}},
@@ -404,7 +406,7 @@ const EV=[
   {w:t=>t.includes("con")?.8:0,f(){S.steps=Math.max(here().at,S.steps-1500);return "A Goon yells KEEP MOVING. You keep moving. In the wrong direction.";}},
   {w:t=>t.includes("con")?.6:.2,f(){S.shirts++;S.vibes+=10;return "You spotted the fed. Nobody believes you, but you got a shirt that says you did.";}},
   {w:t=>t.includes("con")?.5:0,f(){const m=pickAny();if(!m)return null;const c=Math.min(S.cash,20);S.cash-=c;S.vibes+=20;return m.h+" got a mohawk at Mohawk Con for charity. It looks incredible and terrible.";}},
-  {w:t=>(t.includes("con")&&!S.lockpick)?.7:0,f(){S.lockpick=true;S.vibes+=8;return "You sat down at Lockpick Village and opened your first padlock. You feel unstoppable.";}},
+  {w:t=>(t.includes("con")&&!S.lockpick)?.7:0,f(){S.lockpick=true;S.vibes+=8;if(chance(.4)&&!you().inj){you().inj="worn out fingertips";return "You sat down at Lockpick Village and picked locks for three hours straight. You can open a padlock now, but your fingertips are rubbed raw.";}return "You sat down at Lockpick Village and opened your first padlock. You feel unstoppable.";}},
   {w:t=>t.includes("con")?.5:0,f(){if(S.room>0){S.room--;return "A very friendly person at the Social Engineering Village talked you out of a hotel room key. You lost a room night.";}S.vibes-=5;return "Someone at the Social Engineering Village got your mother's maiden name in under a minute.";}},
   {w:t=>t.includes("casino")?.7:.2,f(){present().forEach(m=>m.hp-=4);return "Every elevator is full of hackers. You take the stairs. Many, many stairs.";}},
   {w:t=>.5,f(){const c=Math.min(S.cash,R(30,70));S.cash-=c;return "Rideshare surge pricing during the con. You paid $"+c+" to go a mile.";}},
@@ -424,6 +426,17 @@ const EV=[
   {w:t=>S.block===0?1:.3,f(){S.snacks+=15;return "You found an unattended conference breakfast spread. You filled your bag.";}},
   {w:t=>(S.water>0||S.snacks>0)?.4:0,f(){S.water=Math.floor(S.water/2);S.snacks=Math.floor(S.snacks/2);return "Somebody walked off with your bag of supplies. You lost half your water and snacks.";}},
   {w:t=>S.phones.length>1?.4:0,f(){S.phones.pop();return "Your burner phone got burned. You did not even know that could happen literally.";}},
+  {w:t=>(S.badges>0||S.badge)?.7:0,f(){
+    if(S.badges>=2){S.badges-=2;return "Two of your hacker badges touched in your bag and shorted each other out. Both badges are bricked.";}
+    if(S.badge&&S.badges>=1&&!S.badgeDead){S.badges-=1;S.badgeDead=true;return "Your DEF CON badge brushed against a hacker badge on your lanyard and they shorted each other out. Both are busted. The Goons still let you in with a dead badge, but it will never blink again.";}
+    return null;}},
+  {w:t=>(S.pace==="full"?1.6:S.pace==="grind"?.9:.3)+(t.includes("casino")?.6:0)+(t.includes("con")?.4:0),f(){const m=pickAny();if(!m||m.inj)return null;m.inj="foot blisters";m.hp-=8;
+    return m.h+" has blisters on the bottoms of both feet. The hallway con in these casinos is miles of carpet, and every step hurts now.";}},
+  {w:t=>t.includes("outdoor")&&S.day>=2?.7:0,f(){
+    S.steps=Math.max(here().at,S.steps-1000);
+    if(S.cash>=15*present().length&&chance(.6)){S.cash-=15*present().length;S.steps=Math.min(nextL().at,S.steps+5000);S.vibes+=15;return "The monsoon flooded the street so bad that people are floating down it. Your crew bought pool floats at the corner drugstore and rode the current right down the road.";}
+    present().forEach(m=>m.hp-=6);S.water+=2;return "The monsoon flooded the street so bad that hackers are floating past on pool floats from the drugstore. You waded through it soaked to the knees.";}},
+  {w:t=>t.includes("con")?.4:0,f(){const m=pickAny();if(!m||m.inj)return null;m.inj="soldering burn";m.hp-=8;return m.h+" grabbed the wrong end of a soldering iron at the Hardware Hacking Village. That burn is getting a story told about it for years.";}},
   {w:t=>.5,f(){S.vibes+=10;present().forEach(m=>m.hp+=6);return "You found the chill out lounge. Beanbags, ambient music, and nobody asking you about AI.";}}
 ];
 
@@ -452,6 +465,7 @@ function tick(kind){
     const need=crew.length*(outside?2:1);
     if(S.water>=need){S.water-=need;}
     else{S.water=0;crew.forEach(m=>m.hp-=10);log("Not enough water. Everybody is getting cooked by the heat.");}
+    if(outside&&S.block!==2){crew.forEach(m=>m.hp-=(S.block===1?7:4));if(S.block===1)log("It is ridiculously hot outside. The sidewalk is cooking everybody even with water.");}
   }
   // meals
   if(S.block===0||S.block===2){
@@ -480,7 +494,7 @@ function tick(kind){
   crew.forEach(m=>{
     m.hp-=wear;
     if(m.sick){m.hp-=6;if(chance(.14)){log(m.h+" shook off the "+m.sick+".");m.sick=null;}}
-    if(m.inj){m.hp-=2;if(chance(.06)){log(m.h+" can use that "+m.inj.replace("broken ","")+" again. Mostly.");m.inj=null;}}
+    if(m.inj){m.hp-=2;const heal=m.inj.indexOf("broken")===0?.06:.14;if(chance(heal)){log(m.h+" healed up from the "+m.inj+". Mostly.");m.inj=null;}}
     m.hp=clamp(m.hp,0,100);
   });
   S.vibes=clamp(S.vibes-2,0,100);
@@ -552,6 +566,10 @@ function morning(){
   let out="<p>6 2 1 check for "+DAYS[S.day]+": sleep <b class='"+(okS?"ok":"bd")+"'>"+(okS?"yes":"no")+"</b>, two meals <b class='"+(okM?"ok":"bd")+"'>"+(okM?"yes":"no")+"</b>, shower <b class='"+(okH?"ok":"bd")+"'>"+(okH?"yes":"no")+"</b>.</p>";
   if(okS&&okM&&okH){S.vibes=clamp(S.vibes+8,0,100);out+="<p>You honored the 6 2 1 rule. Vibes up.</p>";}
   else if(!okS&&!okM&&!okH){S.vibes=clamp(S.vibes-8,0,100);out+="<p>You broke every part of the 6 2 1 rule. Vibes down.</p>";}
+  if(!okH){
+    if((S.deo||0)>0){if(chance(.35))S.deo--;out+="<p>No shower, but at least you have deodorant.</p>";}
+    else{S.vibes=clamp(S.vibes-8,0,100);out+="<p>No shower and no deodorant. The crew smells like LineCon. People are leaving a little extra room around you.</p>";const m=pickFriend();if(m&&chance(.2)){m.lost=true;out+="<p>"+esc(m.h)+" found somebody who smells better to hang out with.</p>";}}
+  }
   S.d621={sleep:false,meals:0,shower:false};
   S.day++;S.block=0;
   out+="<p>It is "+DAYS[S.day]+" morning.</p>";
@@ -566,7 +584,8 @@ function actContinue(){
   const nx=nextL();
   let gain={chill:5000,grind:7000,full:9000}[S.pace];
   if(S.block===2)gain*=.6;
-  if(you().inj==="broken leg")gain*=.6;
+  if(you().inj==="broken leg")gain*=.6;else if(you().inj==="foot blisters")gain*=.8;
+  if(S.pace==="full"&&!you().inj&&chance(.12)){you().inj="foot blisters";log("Full send pace gave you blisters on the bottoms of your feet.");}
   gain=Math.round(gain*(0.85+Math.random()*.3));
   S.steps=Math.min(S.steps+gain,nx.at);
   walking=performance.now();
@@ -604,10 +623,10 @@ function special(l){
     note(x,"TOXIC BBQ");log("Ate at the Toxic BBQ.");
   }else if(l.special==="villages"){
     modal("THE VILLAGES","<p>Pick a village to spend some time in.</p>",[
-      {t:"Lockpick Village",s:"Learn to pick locks.",fn:()=>{S.lockpick=true;S.vibes=clamp(S.vibes+8,0,100);note("You opened a padlock, a handcuff, and a door you were not supposed to open.");}},
+      {t:"Lockpick Village",s:"Learn to pick locks.",fn:()=>{S.lockpick=true;S.vibes=clamp(S.vibes+8,0,100);let x="You opened a padlock, a handcuff, and a door you were not supposed to open.";if(chance(.5)&&!you().inj){you().inj="worn out fingertips";x+=" Your fingertips are worn down to nothing from all the tension wrench work.";}note(x);}},
       {t:"Car Hacking Village",s:"Long line, cool cars.",fn:()=>{S.shirts+=2;S.sao++;note("You plugged into a car's CAN bus and made the wipers dance. Got a shirt and an SAO.");}},
       {t:"Voting Machine Village",s:"Very serious, very fun.",fn:()=>{S.stickers+=10;S.vibes=clamp(S.vibes+6,0,100);note("You watched somebody pop a voting machine open with a hotel key. You got a pile of stickers.");}},
-      {t:"Hardware Hacking Village",s:"Solder something.",fn:()=>{S.badges++;S.cables++;note("You soldered a badge kit together and somebody gave you a spare cable.");}},
+      {t:"Hardware Hacking Village",s:"Solder something.",fn:()=>{S.badges++;S.cables++;let x="You soldered a badge kit together and somebody gave you a spare cable.";if(chance(.4)){const m=pickAny();if(m&&!m.inj){m.inj="soldering burn";m.hp=clamp(m.hp-8,0,100);x+=" "+m.h+" touched the hot end of the iron and has a fresh soldering burn.";}}note(x);}},
       {t:"Social Engineering Village",s:"Watch live vishing calls.",fn:()=>{S.vibes=clamp(S.vibes+10,0,100);if(S.invites.indexOf("suite")<0)S.invites.push("suite");note("You watched a contestant talk a stranger out of their badge number. Somebody in the crowd invited you to a suite party.");}}
     ]);
   }else if(l.special==="roller"){
@@ -689,7 +708,7 @@ function openShop(key,after){
   const price=k=>Math.round(ITEMS[k].p*(k==="badge"?1:sh.mult));
   const rows=sh.items.map(k=>{
     q[k]=0;
-    const extra=k==="badge"&&S.badge?"<small>You already have one</small>":"<small>"+ITEMS[k].u+"</small>";
+    const extra=k==="badge"&&S.badge?"<small>You already have one</small>":k==="deo"?"<small>Please</small>":"<small>"+ITEMS[k].u+"</small>";
     return "<div class='shopRow'><div class='nm'>"+ITEMS[k].n+extra+"</div><div class='pr'>$"+price(k)+"</div><button class='qb' data-k='"+k+"' data-d='-1'>-</button><div class='qt' id='q_"+k+"'>0</div><button class='qb' data-k='"+k+"' data-d='1'>+</button></div>";
   }).join("");
   const kit=key!=="linecon";
@@ -708,7 +727,7 @@ function openShop(key,after){
       S.cash-=t;
       for(const k of sh.items){const n=q[k];if(!n)continue;
         if(k==="water")S.water+=n;else if(k==="snacks")S.snacks+=n;else if(k==="drinks")S.drinks+=n;
-        else if(k==="bank")S.banks+=n;else if(k==="cable")S.cables+=n;
+        else if(k==="bank")S.banks+=n;else if(k==="deo")S.deo=(S.deo||0)+n;else if(k==="cable")S.cables+=n;
         else if(k==="burner"){for(let i=0;i<n;i++)S.phones.push(100);}
         else if(k==="badge"){S.badge=true;}
         else if(k==="merch"){S.shirts+=n;S.vibes=clamp(S.vibes+3*n,0,100);}
@@ -763,9 +782,9 @@ function goParty(p){
   else if(p.id==="goth"){S.vibes=clamp(S.vibes+8,0,100);out.push("Black lights, black clothes, and the best dance floor of the week.");}
   else if(p.id==="jeop"){S.vibes=clamp(S.vibes+10,0,100);S.stickers+=10;out.push("Hacker Jeopardy was loud and ridiculous. Your crew yelled answers at the screen all night.");}
   else if(p.id==="suite"){S.badges+=chance(.5)?1:0;S.sao+=R(1,3);S.drinks+=4;out.push("The mystery suite party had a bathtub full of drinks and a table of rare SAOs.");}
-  else if(p.id==="queer"){S.vibes=clamp(S.vibes+8,0,100);S.stickers+=8;out.push("Everybody was friendly, the music was great, and you traded a pile of stickers.");}
+  else if(p.id==="queer"){S.vibes=clamp(S.vibes+12,0,100);S.stickers+=10;S.drinks+=3;out.push("The Queercon Pool Party went late. Great music, a pool full of hackers, and you traded a pile of stickers.");}
   else if(p.id==="karaoke"){S.vibes=clamp(S.vibes+6,0,100);out.push("You sang a song about packet loss. It went over well.");}
-  else if(p.id==="bpool"){S.drinks+=3;out.push("Pool, cheap beer, and talk about talks you missed.");}
+  else if(p.id==="bpool"){S.drinks+=3;S.vibes=clamp(S.vibes+6,0,100);out.push("The BSides pool party delivered. Cold drinks, warm pool, and a lot of people asking what talks you saw.");}
   else if(p.id==="lonely"){out.push("Met a bunch of solo hackers. Now you have a bigger crew in the group chat.");if(lostOnes().length&&chance(.5)){const m=pick(lostOnes());m.lost=false;out.push("Wait, "+m.h+" was there the whole time.");}}
   else if(p.id.indexOf("grp:")===0){
     const g=p.id.slice(4);S.drinks+=2;
@@ -895,7 +914,7 @@ function actBag(){
   modal("SUPPLIES",suppliesHTML()+"<hr style='border:0;border-top:1px dashed #c9d6ec'>"+crewHTML());
 }
 function suppliesHTML(){
-  return "<div>Cash: $"+S.cash+"</div><div>Phones: "+phoneLine()+"</div><div>Power banks: "+S.banks+"</div><div>Cables: "+S.cables+"</div><div>Water: "+S.water+"</div><div>Snacks: "+S.snacks+"</div><div>Booze: "+S.drinks+"</div><div>Room nights: "+S.room+"</div><div>DEF CON badge: "+(S.badge?"<span class='ok'>yes</span>":"<span class='bd'>no</span>")+"</div>"+(S.blackBadge?"<div class='ok'>Black Badge: yes</div>":"")+(S.lockpick?"<div>Skill: lockpicking</div>":"");
+  return "<div>Cash: $"+S.cash+"</div><div>Phones: "+phoneLine()+"</div><div>Power banks: "+S.banks+"</div><div>Cables: "+S.cables+"</div><div>Water: "+S.water+"</div><div>Snacks: "+S.snacks+"</div><div>Booze: "+S.drinks+"</div><div>Deodorant: "+(S.deo||0)+"</div><div>Room nights: "+S.room+"</div><div>DEF CON badge: "+(S.badge?"<span class='ok'>yes</span>":"<span class='bd'>no</span>")+"</div>"+(S.badgeDead?"<div class='bd'>Badge electronics: fried</div>":"")+(S.blackBadge?"<div class='ok'>Black Badge: yes</div>":"")+(S.lockpick?"<div>Skill: lockpicking</div>":"");
 }
 function crewHTML(){
   return S.party.map((m,i)=>{
@@ -1221,7 +1240,7 @@ function drawScene(){
       cx.fillStyle="#f1c9a5";cx.fillRect(x-4,y-30,8,8);
       cx.fillStyle="#17233a";cx.fillRect(x-4,y-8,3,8);cx.fillRect(x+1,y-8,3,8);
       cx.fillStyle="#3b82f6";cx.fillRect(x-1,y-20,3,4);
-      if(n&&S.badge){cx.fillStyle=Math.floor(sceneT/250+i)%2?"#9fd0ff":"#ff6fa8";cx.fillRect(x-1,y-20,3,4);}
+      if(n&&S.badge&&!S.badgeDead){cx.fillStyle=Math.floor(sceneT/250+i)%2?"#9fd0ff":"#ff6fa8";cx.fillRect(x-1,y-20,3,4);}
     });
     const sx=baseX-34;const sy=fy;
     cx.fillStyle="#1f5fd6";cx.fillRect(sx,sy-24,22,20);
