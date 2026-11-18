@@ -60,8 +60,10 @@ header .sub{margin-left:auto;font-size:11px;color:var(--soft);text-align:right;l
 .mb.main{background:var(--blue);color:#fff;text-align:center}
 .mb.dim{border-color:var(--line);color:#9aaac4}
 .mb small{display:block;font-weight:400;font-size:11px;opacity:.85}
-input.handle{width:100%;font:inherit;font-size:15px;padding:8px;border:2px solid var(--line);border-radius:8px;margin:0 0 8px;color:var(--ink)}
+input.handle{width:100%;margin:0 !important;font:inherit;font-size:15px;padding:8px;border:2px solid var(--line);border-radius:8px;margin:0 0 8px;color:var(--ink)}
 input.handle:focus{outline:none;border-color:var(--blue)}
+.crewRow{display:grid;grid-template-columns:1fr 104px;gap:6px;margin:0 0 8px;align-items:center}
+select.grp{width:100%;height:44px;font:inherit;font-size:14px;border:2px solid var(--blue);border-radius:8px;background:#fff;color:var(--blue);font-weight:700;padding:0 4px}
 .shopRow{display:grid;grid-template-columns:1fr 62px 40px 34px 40px;align-items:center;gap:4px;margin-bottom:6px}
 .shopRow .nm{font-size:13px}
 .shopRow .nm small{display:block;color:var(--soft);font-size:10px}
@@ -212,6 +214,14 @@ const ITEMS={
   merch:{n:"Official merch shirt",p:35,u:"each",max:9}
 };
 
+const GROUPS=[
+  ["DC702","Las Vegas"],["DC602","Phoenix"],["DC480","Phoenix East Valley"],["DC520","Tucson"],["DC928","Northern Arizona"],
+  ["DC503","Portland"],["DC206","Seattle"],["DC415","San Francisco"],["DC408","San Jose"],["DC213","Los Angeles"],["DC619","San Diego"],
+  ["DC801","Salt Lake City"],["DC303","Denver"],["DC505","Albuquerque"],["DC512","Austin"],["DC214","Dallas"],["DC713","Houston"],
+  ["DC312","Chicago"],["DC612","Minneapolis"],["DC313","Detroit"],["DC404","Atlanta"],["DC305","Miami"],["DC202","Washington DC"],
+  ["DC212","New York City"],["DC617","Boston"],["DC215","Philadelphia"]
+];
+const grpCity=c=>{const g=GROUPS.find(x=>x[0]===c);return g?g[1]:"somewhere";};
 const TIPS=[
   "Follow the 6 2 1 rule. Six hours of sleep, two meals, one shower. Every single day.",
   "Never use a casino ATM during con week. Bring cash from home.",
@@ -242,12 +252,14 @@ const TIPS=[
   "Village talks fill up fast. Pick the one you care about and camp out.",
   "Sticker trading is a currency here. Always carry a few of your own.",
   "If you get lost in a casino, look for the ceiling. Exits have different ceilings.",
+  "DEF CON Groups are named DC plus your area code. DC602 is Phoenix, DC503 is Portland, DC702 is home turf.",
+  "Moved across the country? Plenty of hackers still roll with their old DEF CON Group crew every summer.",
+  "Every DEF CON Group throws its own meetup during con week. Show up to another city's and you will leave with new friends.",
   "Parties with a guest list usually have a back door. Make friends with the person holding the clipboard."
 ];
 
 const PARTIES=[
   {id:"bpool",n:"BSides Pool Party",days:[0,1],need:null,d:"Pool water, cheap beer, and talk about the talks you missed."},
-  {id:"dive",n:"Hacker Meetup at a Dive Bar",days:[0,2],need:null,d:"Somebody from your local DEF CON Group set this up."},
   {id:"vroof",n:"Vendor Rooftop Party",days:[1,2,3,4],need:"vendor",d:"Open bar, sliders, and a sales rep who wants your email."},
   {id:"lonely",n:"Lonely Hackers Club Meetup",days:[2,3],need:null,d:"For folks who came solo and want a crew."},
   {id:"karaoke",n:"Hacker Karaoke",days:[3,4],need:null,d:"Terrible singing, incredible energy."},
@@ -275,9 +287,9 @@ let modalOpen=false;
 const Q=[];
 
 /* ---------- state ---------- */
-function newState(profKey,handles){
+function newState(profKey,handles,groups){
   const p=PROFS[profKey];
-  const party=handles.map((h,i)=>({h:h||("hacker"+i),hp:100,sick:null,inj:null,lost:false,gone:false,ctf:false}));
+  const party=handles.map((h,i)=>({h:h||("hacker"+i),g:(groups&&groups[i])||"DC702",hp:100,sick:null,inj:null,lost:false,gone:false,ctf:false}));
   return {
     v:1,prof:profKey,mult:p.mult,cash:p.cash,room:p.room,
     party,water:0,snacks:0,drinks:0,banks:0,cables:0,phones:[100],
@@ -355,6 +367,7 @@ const EV=[
   {w:t=>1.1,f(){const m=pickAny();if(!m||m.inj)return null;const leg=chance(.5);m.inj=leg?"broken leg":"broken arm";m.hp-=leg?30:20;
     return m.h+(leg?pick([" broke a leg jumping off the stage at Hacker Karaoke."," broke a leg on an escalator that was not moving."," broke a leg tripping over a cable run in the hallway."]):pick([" broke an arm arm wrestling a Goon."," broke an arm diving to catch a falling badge."," broke an arm in a lockpicking accident nobody can explain."]));}},
   {w:t=>1+(phoneDead()?2.5:0)+(S.booze==="blackout"?1.5:0)+(t.includes("con")?.5:0),f(){const m=pickFriend();if(!m)return null;m.lost=true;
+    if(m.g&&m.g!==you().g&&chance(.5))return m.h+" ran off with the rest of "+m.g+". Old crew wins again."+(phoneDead()?" Your phone is dead, so good luck finding them.":"");
     return m.h+pick([" wandered into the Car Hacking Village and stopped answering texts."," followed a guy with a cool badge and was never seen again."," went to get a drink and got absorbed by the hallway con."," said they were going to the bathroom an hour ago."," got lost in the wild somewhere between two casinos."])+(phoneDead()?" Your phone is dead, so good luck finding them.":"");}},
   {w:t=>lostOnes().length?(phoneDead()?.6:2.2):0,f(){const m=pick(lostOnes());m.lost=false;let x="";
     if(m.ctf&&chance(.35)){S.blackBadge=true;x=" Their CTF team won. They are holding a Black Badge and crying.";}
@@ -704,6 +717,11 @@ function openShop(key,after){
 function actParty(){
   if(S.block!==2){note("Parties start at night. It is "+BLOCKS[S.block].toLowerCase()+" right now.");return;}
   const list=PARTIES.filter(p=>p.days.indexOf(S.day)>=0);
+  if(S.day<6){
+    const gs=[];S.party.forEach(m=>{if(!m.gone&&m.g&&gs.indexOf(m.g)<0)gs.push(m.g);});
+    const extra=GROUPS[(S.day*7+3)%GROUPS.length][0];if(gs.indexOf(extra)<0)gs.push(extra);
+    gs.forEach(g=>list.unshift({id:"grp:"+g,n:g+" Meetup",days:[S.day],need:null,d:(g===you().g?"Your home group, "+grpCity(g)+". Everybody knows you here.":"The "+grpCity(g)+" crew. Show up and make friends.")}));
+  }
   const b=list.map(p=>{
     const ok=canEnter(p);
     return {t:p.n,s:ok?p.d:"Locked. "+lockWhy(p),dim:!ok,fn:()=>{if(!canEnter(p)){note("You cannot get into "+p.n+". "+lockWhy(p));return;}goParty(p);}};
@@ -726,7 +744,7 @@ function lockWhy(p){
   return "";
 }
 function goParty(p){
-  if(S.parties.indexOf(p.id)<0)S.parties.push(p.id);
+  if(p.id.indexOf("grp:")!==0&&S.parties.indexOf(p.id)<0)S.parties.push(p.id);
   const out=[];
   S.vibes=clamp(S.vibes+12,0,100);
   if(p.id==="vroof"){S.snacks+=6;S.drinks+=6;S.shirts+=R(1,3);out.push("Open bar and sliders. A sales rep gave you a shirt and a branded fidget toy.");}
@@ -738,7 +756,14 @@ function goParty(p){
   else if(p.id==="karaoke"){S.vibes=clamp(S.vibes+6,0,100);out.push("You sang a song about packet loss. It went over well.");}
   else if(p.id==="bpool"){S.drinks+=3;out.push("Pool, cheap beer, and talk about talks you missed.");}
   else if(p.id==="lonely"){out.push("Met a bunch of solo hackers. Now you have a bigger crew in the group chat.");if(lostOnes().length&&chance(.5)){const m=pick(lostOnes());m.lost=false;out.push("Wait, "+m.h+" was there the whole time.");}}
-  else if(p.id==="dive"){S.drinks+=2;out.push("Your local DEF CON Group took over half the bar.");}
+  else if(p.id.indexOf("grp:")===0){
+    const g=p.id.slice(4);S.drinks+=2;
+    if(g===you().g){S.vibes=clamp(S.vibes+6,0,100);out.push(g+" took over half the bar. Your home crew bought the first round.");}
+    else{S.stickers+=R(5,12);out.push(g+" took over a corner of the bar. You traded "+grpCity(g)+" stickers and got added to their group chat.");if(chance(.3)&&S.invites.indexOf("suite")<0){S.invites.push("suite");out.push("Somebody from "+g+" tells you where the mystery suite party is.");}}
+    const found=lostOnes().filter(m=>m.g===g);
+    found.forEach(m=>{m.lost=false;m.ctf=false;out.push("Found "+m.h+" drinking with the "+g+" crew.");});
+    if(S.parties.indexOf("grp")<0)S.parties.push("grp");
+  }
   else{out.push("Everybody hugged and coughed on each other.");}
   if(chance(.35)){S.celebs++;out.push("You ran into "+pick(CELEBS)+".");}
   if(chance(.3)){const m=pickAny();if(m){m.sick="bad alcohol";m.hp=clamp(m.hp-10,0,100);out.push(m.h+" drank something from an unlabeled jug and regrets it.");}}
@@ -867,7 +892,7 @@ function crewHTML(){
     if(m.gone)st="<span class='bd'>flew home</span>";
     else if(m.lost)st="<span class='wn'>lost in the wild</span>";
     else{st="<span class='"+(m.hp>=55?"ok":m.hp>=30?"wn":"bd")+"'>"+hpWord(m.hp)+"</span>";if(m.sick)st+=", "+m.sick;if(m.inj)st+=", "+m.inj;}
-    return "<div class='mem'>"+esc(m.h)+(i===0?" (you)":"")+": "+st+"</div>";
+    return "<div class='mem'>"+esc(m.h)+(m.g?" <span style='color:#1f5fd6'>"+m.g+"</span>":"")+(i===0?" (you)":"")+": "+st+"</div>";
   }).join("");
 }
 function swagHTML(){
@@ -880,6 +905,7 @@ function score(){
   let s=S.shirts*2+S.stickers+S.sao*10+S.badges*25+S.celebs*20+S.parties.length*15+surv*50+Math.floor(S.cash/10)+Math.floor(phoneCharge()/5);
   if(S.at>=L.length-1)s+=100;
   if(S.blackBadge)s+=300;
+  const gs={};S.party.forEach(m=>{if(m.g)gs[m.g]=1;});s+=Object.keys(gs).length*15;
   return s*S.mult;
 }
 function finish(){
@@ -920,10 +946,13 @@ function chooseProf(){
 }
 function chooseNames(k){
   const def=["you","nullbyte","lockjaw","solderqueen","packetgremlin"];
-  const html="<p>Your handle and your crew.</p>"+def.map((d,i)=>"<input class='handle' id='hn"+i+"' maxlength='16' value='"+d+"' placeholder='"+(i===0?"your handle":"friend "+i)+"'>").join("");
+  const dg=["DC602","DC602","DC602","DC503","DC702"];
+  const opts=g=>GROUPS.map(x=>"<option value='"+x[0]+"'"+(x[0]===g?" selected":"")+">"+x[0]+"</option>").join("");
+  const html="<p>Your handle, your crew, and each person's DEF CON Group. Groups go by area code. Your old crew can come from a city you moved away from.</p>"+def.map((d,i)=>"<div class='crewRow'><input class='handle' id='hn"+i+"' maxlength='16' value='"+d+"' placeholder='"+(i===0?"your handle":"friend "+i)+"'><select class='grp' id='hg"+i+"'>"+opts(dg[i])+"</select></div>").join("");
   modal("YOUR CREW",html,[{t:"Head to Vegas",main:true,fn:()=>{
     const hs=def.map((d,i)=>{const v=($("hn"+i).value||"").trim();return v||d;});
-    S=newState(k,hs);
+    const gs=def.map((d,i)=>$("hg"+i).value);
+    S=newState(k,hs,gs);
     log("You landed at Harry Reid International Airport with $"+S.cash+".");
     openShop("airport",()=>{
       log("Pace is grinding, booze is social, meals are two a day. Change them in the menu.");
