@@ -71,6 +71,7 @@ select.grp{width:100%;height:44px;font:inherit;font-size:14px;border:2px solid v
 .qb{height:36px;border:2px solid var(--blue);border-radius:8px;background:#fff;color:var(--blue);font:inherit;font-weight:700;font-size:16px;padding:0}
 .qt{text-align:center;font-weight:700}
 .shopTot{display:flex;justify-content:space-between;padding:8px 0 0;border-top:1px dashed var(--line);font-weight:700}
+.shopTip{height:66px;overflow:hidden;font-size:12px;color:var(--soft);background:#eef4ff;border-radius:8px;padding:6px 8px;margin:0 0 10px}
 .res{height:70px;overflow:hidden;background:#eef4ff;border-radius:8px;padding:8px;font-size:13px;margin:8px 0}
 .betRow{display:grid;grid-template-columns:50px 50px 1fr 50px 50px;gap:6px;align-items:center}
 .betRow .qt{font-size:18px}
@@ -174,9 +175,9 @@ const BLOCKS=["Morning","Afternoon","Night"];
 const BSHORT=["AM","PM","Night"];
 
 const PROFS={
-  red:{name:"Red Team Consultant",cash:2400,mult:1,room:6,desc:"Company card, company hotel all week. Score multiplier x1."},
-  sys:{name:"Sysadmin",cash:1100,mult:2,room:3,desc:"Splitting a room with the crew for half the week. Score multiplier x2."},
-  stu:{name:"Student",cash:450,mult:3,room:0,desc:"No room, barely any money, maximum glory. Score multiplier x3."}
+  red:{name:"Red Team Consultant",cash:2600,mult:1,room:6,desc:"Company hotel all week. Score multiplier x1."},
+  sys:{name:"Sysadmin",cash:2600,mult:2,room:3,desc:"Splitting a room with the crew for half the week. Score multiplier x2."},
+  stu:{name:"Student",cash:2600,mult:3,room:0,desc:"No room booked. Sleep wherever. Score multiplier x3."}
 };
 
 const L=[
@@ -198,6 +199,8 @@ const L=[
   {n:"DEF CON Closing Ceremonies",at:110000,tags:["con","dc","end"],d:"Black Badges, contest winners, and the long goodbye."}
 ];
 
+const KIT2600={water:20,snacks:30,drinks:10,bank:2,cable:3,burner:1};
+const KIT_TEXT="2600 list: burner phone, two power banks, three cables, water, snacks, a little booze.";
 const SHOPS={
   airport:{name:"Airport Newsstand",items:["water","snacks","drinks","bank","cable","burner"],mult:1.25},
   strip:{name:"Strip Convenience Store",items:["water","snacks","drinks","bank","cable","burner"],mult:1.1},
@@ -242,6 +245,7 @@ const TIPS=[
   "Lockpick Village will teach you to open a padlock faster than you think.",
   "Hydrate. The Vegas heat does not care that you spend most of the day indoors.",
   "Do not plug your phone into a random USB port. Juice jacking is a meme for a reason.",
+  "First timer? Go with the 2600 list. Burner phone, power banks, spare cables, water, snacks, and cash for the badge.",
   "Real hackers carry a power bank, a backup power bank, and a cable for each one.",
   "BSides Las Vegas is free to attend, so get in line early for the talks you want.",
   "Black Hat is the suits. DEF CON is the t-shirts.",
@@ -688,9 +692,17 @@ function openShop(key,after){
     const extra=k==="badge"&&S.badge?"<small>You already have one</small>":"<small>"+ITEMS[k].u+"</small>";
     return "<div class='shopRow'><div class='nm'>"+ITEMS[k].n+extra+"</div><div class='pr'>$"+price(k)+"</div><button class='qb' data-k='"+k+"' data-d='-1'>-</button><div class='qt' id='q_"+k+"'>0</div><button class='qb' data-k='"+k+"' data-d='1'>+</button></div>";
   }).join("");
-  const html="<p>"+sh.name+". Cash: $<span id='shopCash'>"+S.cash+"</span></p>"+rows+"<div class='shopTot'><span>Total</span><span id='shopTot'>$0</span></div>";
+  const kit=key!=="linecon";
+  const html="<p>"+sh.name+". Cash: $<span id='shopCash'>"+S.cash+"</span></p>"+(kit?"<div class='shopTip' id='shopTip'>New here? Tap Go with the 2600 list for the first timer kit.</div>":"")+rows+"<div class='shopTot'><span>Total</span><span id='shopTot'>$0</span></div>";
   const total=()=>sh.items.reduce((s,k)=>s+q[k]*price(k),0);
-  modal(sh.name.toUpperCase(),html,[
+  const upd=()=>{const t=total();$("shopTot").textContent="$"+t;$("shopTot").className=t>S.cash?"bd":"";};
+  const btns=[];
+  if(kit)btns.push({t:"Go with the 2600 list",s:"Loads a first timer kit into your cart.",keep:true,fn:()=>{
+    for(const k of sh.items){q[k]=KIT2600[k]||0;$("q_"+k).textContent=q[k];}
+    upd();const left=S.cash-total();
+    $("shopTip").textContent=KIT_TEXT+(left<440?" Careful, that leaves under $440 for the badge.":" Leaves $"+left+", plenty for the badge.");
+  }});
+  modal(sh.name.toUpperCase(),html,btns.concat([
     {t:"Buy",main:true,fn:()=>{
       const t=total();if(t>S.cash){note("You do not have that much cash.");openShop(key,after);return;}
       S.cash-=t;
@@ -705,11 +717,10 @@ function openShop(key,after){
       if(after)after();
     }},
     {t:"Leave",fn:()=>{if(after)after();}}
-  ],()=>{
+  ]),()=>{
     document.querySelectorAll(".qb").forEach(b=>{b.onclick=()=>{
       const k=b.dataset.k,d=+b.dataset.d;let mx=ITEMS[k].max;if(k==="badge"&&S.badge)mx=0;
-      q[k]=clamp(q[k]+d,0,mx);$("q_"+k).textContent=q[k];
-      const t=total();$("shopTot").textContent="$"+t;$("shopTot").className=t>S.cash?"bd":"";
+      q[k]=clamp(q[k]+d,0,mx);$("q_"+k).textContent=q[k];upd();
     };});
   });
 }
@@ -942,7 +953,7 @@ function startFlow(){
   modal("DEF CON TRAIL","<p>Hacker summer camp in Las Vegas. BSides, Black Hat, DEF CON, and every party in between.</p><p>Make it to Sunday night with cash in your pocket and charge on your phone. Everybody ends with the con crud.</p>",b);
 }
 function chooseProf(){
-  modal("WHO ARE YOU","<p>Pick your background.</p>",Object.keys(PROFS).map(k=>({t:PROFS[k].name,s:PROFS[k].desc+" Starting cash $"+PROFS[k].cash+".",fn:()=>chooseNames(k)})));
+  modal("WHO ARE YOU","<p>Everybody starts with $2600, in honor of the 2600 Hz tone. A toy whistle from a cereal box hit that exact pitch, and blowing it into a payphone made the phone network think the line was free. That trick led straight to the blue box.</p><p>Pick your background.</p>",Object.keys(PROFS).map(k=>({t:PROFS[k].name,s:PROFS[k].desc,fn:()=>chooseNames(k)})));
 }
 function chooseNames(k){
   const def=["you","nullbyte","lockjaw","solderqueen","packetgremlin"];
