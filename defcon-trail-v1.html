@@ -1,0 +1,1062 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no">
+<meta name="theme-color" content="#eaf2ff">
+<title>DEF CON Trail</title>
+<style>
+:root{
+  --bg:#f4f7fc;
+  --card:#ffffff;
+  --ink:#17233a;
+  --soft:#5a6b86;
+  --blue:#1f5fd6;
+  --blue2:#3b82f6;
+  --blueSoft:#dbe8ff;
+  --line:#c9d6ec;
+  --good:#1d8a4e;
+  --bad:#c2372f;
+  --warn:#b7791f;
+}
+*{box-sizing:border-box;-webkit-tap-highlight-color:transparent}
+html,body{margin:0;height:100%;overflow:hidden;background:var(--bg);color:var(--ink);
+  font-family:ui-monospace,"SFMono-Regular",Menlo,Consolas,"Liberation Mono",monospace;}
+#app{display:flex;flex-direction:column;height:100vh;height:100dvh}
+header{flex:0 0 50px;display:flex;align-items:center;gap:10px;padding:0 10px;background:#eaf2ff;border-bottom:2px solid var(--blue)}
+#burger{width:40px;height:40px;border:2px solid var(--blue);background:#fff;border-radius:8px;display:flex;flex-direction:column;justify-content:center;align-items:center;gap:4px;padding:0}
+#burger span{display:block;width:20px;height:3px;background:var(--blue);border-radius:2px}
+header h1{font-size:18px;margin:0;letter-spacing:2px;color:var(--blue)}
+header .sub{margin-left:auto;font-size:11px;color:var(--soft);text-align:right;line-height:1.2}
+#status{flex:0 0 58px;display:grid;grid-template-columns:repeat(4,1fr);gap:4px;padding:6px 8px;background:#fff;border-bottom:1px solid var(--line)}
+.stat{background:var(--blueSoft);border-radius:6px;padding:3px 5px;overflow:hidden}
+.stat .k{font-size:9px;color:var(--soft);text-transform:uppercase;letter-spacing:1px;white-space:nowrap}
+.stat .v{font-size:13px;font-weight:700;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+#sceneWrap{flex:0 0 30vh;position:relative;background:#dbe9ff;border-bottom:2px solid var(--blue)}
+#scene{width:100%;height:100%;display:block}
+#locLine{position:absolute;left:0;right:0;bottom:0;padding:4px 8px;font-size:12px;background:rgba(255,255,255,.85);color:var(--ink);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+#progress{flex:0 0 22px;padding:4px 8px;background:#fff;border-bottom:1px solid var(--line)}
+#bar{height:14px;background:#eef3fb;border:1px solid var(--line);border-radius:7px;overflow:hidden;position:relative}
+#barFill{height:100%;width:0;background:linear-gradient(90deg,var(--blue),var(--blue2))}
+#barText{position:absolute;inset:0;font-size:10px;line-height:12px;text-align:center;color:var(--ink)}
+#msg{flex:1 1 auto;min-height:0;overflow-y:auto;padding:8px 10px;font-size:13px;line-height:1.45;background:#fbfdff}
+#msg p{margin:0 0 7px}
+#msg p.new{color:var(--ink)}
+#msg p.old{color:var(--soft)}
+#actions{flex:0 0 172px;display:grid;grid-template-columns:repeat(3,1fr);grid-template-rows:repeat(3,1fr);gap:6px;padding:8px;background:#eaf2ff;border-top:2px solid var(--blue)}
+.act{border:2px solid var(--blue);background:#fff;color:var(--blue);border-radius:10px;font:inherit;font-size:13px;font-weight:700;letter-spacing:.5px;padding:0}
+.act:active{background:var(--blueSoft)}
+.act.dim{border-color:var(--line);color:#9aaac4}
+.act.hot{background:var(--blue);color:#fff}
+/* modal */
+#modalScrim{position:fixed;inset:0;background:rgba(23,35,58,.35);display:none;align-items:center;justify-content:center;z-index:50;padding:12px}
+#modalScrim.show{display:flex}
+#modal{background:var(--card);width:100%;max-width:460px;max-height:88vh;border-radius:14px;border:2px solid var(--blue);display:flex;flex-direction:column;overflow:hidden;box-shadow:0 10px 40px rgba(31,95,214,.25)}
+#mTitle{flex:0 0 auto;padding:10px 14px;background:#eaf2ff;color:var(--blue);font-weight:700;letter-spacing:1px;border-bottom:1px solid var(--line)}
+#mBody{flex:1 1 auto;overflow-y:auto;padding:12px 14px;font-size:14px;line-height:1.5}
+#mBody p{margin:0 0 10px}
+#mBtns{flex:0 0 auto;display:grid;gap:6px;padding:10px;border-top:1px solid var(--line);background:#f7faff}
+.mb{border:2px solid var(--blue);background:#fff;color:var(--blue);border-radius:10px;font:inherit;font-weight:700;font-size:14px;min-height:44px;padding:6px 8px;text-align:left}
+.mb.main{background:var(--blue);color:#fff;text-align:center}
+.mb.dim{border-color:var(--line);color:#9aaac4}
+.mb small{display:block;font-weight:400;font-size:11px;opacity:.85}
+input.handle{width:100%;font:inherit;font-size:15px;padding:8px;border:2px solid var(--line);border-radius:8px;margin:0 0 8px;color:var(--ink)}
+input.handle:focus{outline:none;border-color:var(--blue)}
+.shopRow{display:grid;grid-template-columns:1fr 62px 40px 34px 40px;align-items:center;gap:4px;margin-bottom:6px}
+.shopRow .nm{font-size:13px}
+.shopRow .nm small{display:block;color:var(--soft);font-size:10px}
+.shopRow .pr{font-size:12px;text-align:right;color:var(--soft)}
+.qb{height:36px;border:2px solid var(--blue);border-radius:8px;background:#fff;color:var(--blue);font:inherit;font-weight:700;font-size:16px;padding:0}
+.qt{text-align:center;font-weight:700}
+.shopTot{display:flex;justify-content:space-between;padding:8px 0 0;border-top:1px dashed var(--line);font-weight:700}
+.res{height:70px;overflow:hidden;background:#eef4ff;border-radius:8px;padding:8px;font-size:13px;margin:8px 0}
+.betRow{display:grid;grid-template-columns:50px 50px 1fr 50px 50px;gap:6px;align-items:center}
+.betRow .qt{font-size:18px}
+#hunt{width:100%;height:300px;display:block;background:#f2f7ff;border:2px solid var(--blue);border-radius:10px;touch-action:none}
+.huntInfo{display:flex;justify-content:space-between;font-size:13px;margin:0 0 6px;height:18px}
+/* menu */
+#menuScrim{position:fixed;inset:0;background:rgba(23,35,58,.25);display:none;z-index:40}
+#menuScrim.show{display:block}
+#menu{position:fixed;top:0;left:0;bottom:0;width:82%;max-width:360px;background:#fff;border-right:3px solid var(--blue);z-index:41;transform:translateX(-105%);transition:transform .2s ease;display:flex;flex-direction:column}
+#menu.show{transform:translateX(0)}
+#menuHead{flex:0 0 50px;display:flex;align-items:center;justify-content:space-between;padding:0 12px;background:#eaf2ff;border-bottom:2px solid var(--blue);color:var(--blue);font-weight:700;letter-spacing:1px}
+#menuClose{width:40px;height:40px;border:2px solid var(--blue);border-radius:8px;background:#fff;color:var(--blue);font:inherit;font-size:18px;font-weight:700}
+#menuBody{flex:1 1 auto;overflow-y:auto;padding:8px}
+details{border:1px solid var(--line);border-radius:10px;margin-bottom:8px;background:#fbfdff}
+summary{padding:10px 12px;font-weight:700;color:var(--blue);list-style:none;cursor:pointer}
+summary::-webkit-details-marker{display:none}
+summary::before{content:"+ ";}
+details[open] summary::before{content:"- ";}
+.dBody{padding:0 12px 10px;font-size:13px;line-height:1.5}
+.seg{display:grid;grid-template-columns:repeat(3,1fr);gap:4px;margin:4px 0 10px}
+.seg button{border:2px solid var(--blue);background:#fff;color:var(--blue);border-radius:8px;font:inherit;font-size:12px;font-weight:700;min-height:38px;padding:2px}
+.seg button.on{background:var(--blue);color:#fff}
+.tl{padding:3px 0;border-bottom:1px dotted var(--line)}
+.tl.done{color:var(--soft)}
+.tl.here{color:var(--blue);font-weight:700}
+.mem{padding:4px 0;border-bottom:1px dotted var(--line)}
+.ok{color:var(--good)} .bd{color:var(--bad)} .wn{color:var(--warn)}
+.wideBtn{width:100%;border:2px solid var(--blue);background:#fff;color:var(--blue);border-radius:10px;font:inherit;font-weight:700;min-height:42px;margin-top:6px}
+</style>
+</head>
+<body>
+<div id="app">
+  <header>
+    <button id="burger" aria-label="Menu"><span></span><span></span><span></span></button>
+    <h1>DEF CON TRAIL</h1>
+    <div class="sub" id="hdrSub">hacker summer camp</div>
+  </header>
+  <div id="status">
+    <div class="stat"><div class="k">Day</div><div class="v" id="sDay">Mon AM</div></div>
+    <div class="stat"><div class="k">Cash</div><div class="v" id="sCash">$0</div></div>
+    <div class="stat"><div class="k">Phone</div><div class="v" id="sPhone">100%</div></div>
+    <div class="stat"><div class="k">Vibes</div><div class="v" id="sVibes">Good</div></div>
+  </div>
+  <div id="sceneWrap"><canvas id="scene"></canvas><div id="locLine">Loading</div></div>
+  <div id="progress"><div id="bar"><div id="barFill"></div><div id="barText">steps</div></div></div>
+  <div id="msg"></div>
+  <div id="actions">
+    <button class="act hot" id="aGo">CONTINUE</button>
+    <button class="act" id="aCharge">CHARGE</button>
+    <button class="act" id="aRest">REST</button>
+    <button class="act" id="aTalk">TALK</button>
+    <button class="act" id="aSwag">SWAG HUNT</button>
+    <button class="act" id="aShop">SHOP</button>
+    <button class="act" id="aParty">PARTY</button>
+    <button class="act" id="aGamble">GAMBLE</button>
+    <button class="act" id="aBag">SUPPLIES</button>
+  </div>
+</div>
+
+<div id="menuScrim"></div>
+<div id="menu">
+  <div id="menuHead"><span>FIELD KIT</span><button id="menuClose" aria-label="Close">X</button></div>
+  <div id="menuBody">
+    <details open><summary>Settings</summary><div class="dBody">
+      <div>Pace</div>
+      <div class="seg" id="segPace"><button data-v="chill">Chill</button><button data-v="grind">Grinding</button><button data-v="full">Full send</button></div>
+      <div>Booze</div>
+      <div class="seg" id="segBooze"><button data-v="dry">Dry</button><button data-v="social">Social</button><button data-v="blackout">Blackout</button></div>
+      <div>Meals</div>
+      <div class="seg" id="segMeals"><button data-v="skip">Skip</button><button data-v="two">Two meals</button><button data-v="feast">Buffets</button></div>
+    </div></details>
+    <details><summary>Crew</summary><div class="dBody" id="mCrew"></div></details>
+    <details><summary>Supplies</summary><div class="dBody" id="mSupplies"></div></details>
+    <details><summary>Swag</summary><div class="dBody" id="mSwag"></div></details>
+    <details><summary>Trail</summary><div class="dBody" id="mTrail"></div></details>
+    <details><summary>Invites</summary><div class="dBody" id="mInv"></div></details>
+    <details><summary>Field Notes</summary><div class="dBody" id="mNotes"></div></details>
+    <details><summary>Journal</summary><div class="dBody" id="mLog"></div></details>
+    <details><summary>Game</summary><div class="dBody">
+      <button class="wideBtn" id="btnNew">Start a new run</button>
+    </div></details>
+  </div>
+</div>
+
+<div id="modalScrim"><div id="modal"><div id="mTitle"></div><div id="mBody"></div><div id="mBtns"></div></div></div>
+
+<script>
+(function(){
+"use strict";
+const SAVE_KEY="defcon-trail-v1-save";
+const $=id=>document.getElementById(id);
+const R=(a,b)=>a+Math.floor(Math.random()*(b-a+1));
+const chance=p=>Math.random()<p;
+const pick=a=>a[Math.floor(Math.random()*a.length)];
+const clamp=(v,a,b)=>Math.max(a,Math.min(b,v));
+const esc=s=>String(s).replace(/[&<>"]/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;"}[c]));
+
+const DAYS=["Monday","Tuesday","Wednesday","Thursday","Friday","Saturday","Sunday"];
+const DSHORT=["Mon","Tue","Wed","Thu","Fri","Sat","Sun"];
+const BLOCKS=["Morning","Afternoon","Night"];
+const BSHORT=["AM","PM","Night"];
+
+const PROFS={
+  red:{name:"Red Team Consultant",cash:2400,mult:1,room:6,desc:"Company card, company hotel all week. Score multiplier x1."},
+  sys:{name:"Sysadmin",cash:1100,mult:2,room:3,desc:"Splitting a room with the crew for half the week. Score multiplier x2."},
+  stu:{name:"Student",cash:450,mult:3,room:0,desc:"No room, barely any money, maximum glory. Score multiplier x3."}
+};
+
+const L=[
+  {n:"Harry Reid International Airport",at:0,tags:["airport"],shop:"airport",d:"Slot machines at the gate. Welcome to hacker summer camp."},
+  {n:"Tuscany Suites, BSides Las Vegas",at:7000,tags:["con","bsides"],d:"The community con. Free, scrappy, and the lines fill up early."},
+  {n:"Mandalay Bay Casino Floor",at:15000,tags:["casino"],cross:"mandalay",d:"A carpeted maze between you and Black Hat."},
+  {n:"Mandalay Bay, Black Hat",at:20000,tags:["con","vendor","blackhat"],shop:"strip",d:"Suits, lanyards, and a Business Hall full of booth swag."},
+  {n:"Desert Range, DEF CON Shoot",at:30000,tags:["outdoor","desert"],special:"shoot",d:"Way out past the city. Bring water. Then bring more water."},
+  {n:"Las Vegas Convention Center, LineCon",at:40000,tags:["con","linecon"],shop:"linecon",special:"linecon",d:"The badge line is a con of its own. Cash only."},
+  {n:"Toxic BBQ",at:47000,tags:["outdoor","party"],special:"bbq",d:"Community run cookout off the Strip, in the heat, full of legends."},
+  {n:"LVCC West Hall, The Villages",at:56000,tags:["con","dc","vendor"],special:"villages",d:"Lockpick, Car Hacking, Voting Machines, Hardware, Social Engineering, Aerospace. All of it."},
+  {n:"Caesars Palace Casino Floor",at:63000,tags:["casino"],cross:"caesars",d:"Nobody has ever found the exit on the first try."},
+  {n:"Caesars Forum",at:68000,tags:["con","dc","vendor"],d:"Contests, talks, and a hallway that never ends."},
+  {n:"Las Vegas Boulevard",at:74000,tags:["outdoor"],cross:"strip",d:"Cross the Strip. Lanes of heat, rental cars, and costumed characters."},
+  {n:"The LINQ, High Roller",at:79000,tags:["casino","outdoor"],shop:"strip",special:"roller",d:"A giant wheel full of hackers holding drinks and staring at the Strip."},
+  {n:"Circle Bar",at:86000,tags:["casino","party"],special:"circle",d:"Where the hallway con goes after midnight."},
+  {n:"Hotel Party Suites",at:94000,tags:["party","casino"],d:"Every door has a sign, a sticker, or somebody with a clipboard."},
+  {n:"Contest Stage, Hacker Jeopardy",at:102000,tags:["con","dc"],d:"Saturday night tradition. Loud, rowdy, and full of trivia."},
+  {n:"DEF CON Closing Ceremonies",at:110000,tags:["con","dc","end"],d:"Black Badges, contest winners, and the long goodbye."}
+];
+
+const SHOPS={
+  airport:{name:"Airport Newsstand",items:["water","snacks","drinks","bank","cable","burner"],mult:1.25},
+  strip:{name:"Strip Convenience Store",items:["water","snacks","drinks","bank","cable","burner"],mult:1.1},
+  linecon:{name:"LineCon Badge Table and Merch Line",items:["badge","merch","water","snacks"],mult:1}
+};
+const ITEMS={
+  water:{n:"Water bottles",p:3,u:"each",max:99},
+  snacks:{n:"Snacks and protein bars",p:5,u:"each",max:99},
+  drinks:{n:"Booze",p:11,u:"each",max:99},
+  bank:{n:"Power bank",p:45,u:"each",max:9},
+  cable:{n:"Charging cable",p:18,u:"each",max:9},
+  burner:{n:"Burner phone",p:65,u:"each",max:3},
+  badge:{n:"DEF CON badge",p:440,u:"cash only",max:1},
+  merch:{n:"Official merch shirt",p:35,u:"each",max:9}
+};
+
+const TIPS=[
+  "Follow the 6 2 1 rule. Six hours of sleep, two meals, one shower. Every single day.",
+  "Never use a casino ATM during con week. Bring cash from home.",
+  "LineCon is where people meet their best friends of the week. Bring cash for the badge and a battery for the wait.",
+  "Turn off Wi-Fi and Bluetooth on your phone. Somebody in this building is always sniffing.",
+  "Goons are the staff. When a Goon says keep moving, keep moving.",
+  "The Wall of Sheep puts cleartext passwords up on the big screen. Do not be a sheep.",
+  "Bring a burner phone. Leave the phone with your whole life on it at home.",
+  "SAO stands for Shitty Add On. Collect enough and your badge looks like a tiny city.",
+  "Badgelife makers sell hand soldered badges out of backpacks in the hallways. Carry small bills.",
+  "A Black Badge gets you into DEF CON for life. Win a big contest and you might earn one.",
+  "Skytalks has a strict no recording rule. Respect it or get escorted out.",
+  "Spot the Fed is an old school contest. Some people make a whole week out of it.",
+  "Hacker Jeopardy runs late on Saturday night and gets rowdy. Get there early for a seat.",
+  "The Toxic BBQ is run by the community. Bring meat, bring drinks, or bring a donation.",
+  "The chill out lounge is where you go when your social battery hits zero.",
+  "Mohawk Con shaves heads for charity. You will see the results all weekend.",
+  "Lockpick Village will teach you to open a padlock faster than you think.",
+  "Hydrate. The Vegas heat does not care that you spend most of the day indoors.",
+  "Do not plug your phone into a random USB port. Juice jacking is a meme for a reason.",
+  "Real hackers carry a power bank, a backup power bank, and a cable for each one.",
+  "BSides Las Vegas is free to attend, so get in line early for the talks you want.",
+  "Black Hat is the suits. DEF CON is the t-shirts.",
+  "Ask before you take photos of people. A lot of folks here do not want their face online.",
+  "The Car Hacking Village line is its own little con. Pack snacks.",
+  "Hallway con is real. Half the best stuff happens between talks.",
+  "The con crud is coming for you. It comes for everybody.",
+  "Village talks fill up fast. Pick the one you care about and camp out.",
+  "Sticker trading is a currency here. Always carry a few of your own.",
+  "If you get lost in a casino, look for the ceiling. Exits have different ceilings.",
+  "Parties with a guest list usually have a back door. Make friends with the person holding the clipboard."
+];
+
+const PARTIES=[
+  {id:"bpool",n:"BSides Pool Party",days:[0,1],need:null,d:"Pool water, cheap beer, and talk about the talks you missed."},
+  {id:"dive",n:"Hacker Meetup at a Dive Bar",days:[0,2],need:null,d:"Somebody from your local DEF CON Group set this up."},
+  {id:"vroof",n:"Vendor Rooftop Party",days:[1,2,3,4],need:"vendor",d:"Open bar, sliders, and a sales rep who wants your email."},
+  {id:"lonely",n:"Lonely Hackers Club Meetup",days:[2,3],need:null,d:"For folks who came solo and want a crew."},
+  {id:"karaoke",n:"Hacker Karaoke",days:[3,4],need:null,d:"Terrible singing, incredible energy."},
+  {id:"queer",n:"Queercon Mixer",days:[3,4],need:null,d:"One of the friendliest rooms of the whole week."},
+  {id:"phreak",n:"Telephreak Party at Caesars",days:[4,5],need:"phreak",d:"Old phones, old legends, and a payphone that still works."},
+  {id:"goth",n:"Goth Con",days:[4,5],need:"black",d:"Dress code is black. A hacker shirt counts."},
+  {id:"jeop",n:"Hacker Jeopardy",days:[5],need:"badge",d:"Saturday night tradition. You need your badge to get in."},
+  {id:"suite",n:"Mystery Suite Party",days:[5],need:"suite",d:"Nobody will say who is throwing it."},
+  {id:"wind",n:"Closing Night Wind Down",days:[6],need:null,d:"Everyone is tired, sick, and happy."}
+];
+
+const CELEBS=[
+  "a legendary phone phreak from the payphone days",
+  "the hacker who found that famous car bug everyone talks about",
+  "a badge designer whose badges sell out in minutes",
+  "a former Black Badge winner who still wears the badge",
+  "the voice behind your favorite hacker podcast",
+  "a Goon who has worked every con since the early days",
+  "the author of a tool installed on every pentester laptop",
+  "a Social Engineering Village champion who talked you out of your name in seconds"
+];
+
+let S=null;
+let modalOpen=false;
+const Q=[];
+
+/* ---------- state ---------- */
+function newState(profKey,handles){
+  const p=PROFS[profKey];
+  const party=handles.map((h,i)=>({h:h||("hacker"+i),hp:100,sick:null,inj:null,lost:false,gone:false,ctf:false}));
+  return {
+    v:1,prof:profKey,mult:p.mult,cash:p.cash,room:p.room,
+    party,water:0,snacks:0,drinks:0,banks:0,cables:0,phones:[100],
+    badge:false,blackBadge:false,lockpick:false,
+    shirts:0,stickers:0,sao:0,badges:0,celebs:0,parties:[],
+    invites:[],vibes:70,
+    day:0,block:0,steps:0,at:0,
+    pace:"grind",booze:"social",meals:"two",
+    d621:{sleep:false,meals:0,shower:false},
+    forceSleep:null,arrivedEnd:false,over:false,result:null,
+    log:[],seenSpecial:{}
+  };
+}
+function save(){try{localStorage.setItem(SAVE_KEY,JSON.stringify(S));}catch(e){}}
+function load(){try{const t=localStorage.getItem(SAVE_KEY);if(!t)return null;const o=JSON.parse(t);return o&&o.v===1?o:null;}catch(e){return null;}}
+function wipe(){try{localStorage.removeItem(SAVE_KEY);}catch(e){}}
+
+function alive(){return S.party.filter(m=>!m.gone);}
+function present(){return S.party.filter(m=>!m.gone&&!m.lost);}
+function friendsPresent(){return S.party.filter((m,i)=>i>0&&!m.gone&&!m.lost);}
+function lostOnes(){return S.party.filter(m=>!m.gone&&m.lost);}
+function you(){return S.party[0];}
+function phoneCharge(){let c=0;for(const p of S.phones)c+=p;return c;}
+function phoneDead(){return S.phones.every(p=>p<=0);}
+function curPhone(){const i=S.phones.findIndex(p=>p>0);return i;}
+function drainPhone(n){const i=curPhone();if(i<0)return;S.phones[i]=Math.max(0,S.phones[i]-n);}
+function chargePhone(n){let i=S.phones.findIndex(p=>p<100);if(i<0)return;S.phones[i]=Math.min(100,S.phones[i]+n);}
+function here(){return L[S.at];}
+function nextL(){return L[Math.min(S.at+1,L.length-1)];}
+function has(tag,l){return (l||here()).tags.indexOf(tag)>=0;}
+function vibeWord(v){return v>=75?"Great":v>=55?"Good":v>=35?"Meh":v>=15?"Bad":"Cooked";}
+function hpWord(h){return h>=80?"good":h>=55?"fair":h>=30?"poor":"very poor";}
+function crewHealth(){const a=present();if(!a.length)return "nobody";const avg=a.reduce((s,m)=>s+m.hp,0)/a.length;return hpWord(avg);}
+
+function log(t,cls){
+  S.log.unshift(t);
+  if(S.log.length>120)S.log.length=120;
+  renderMsg();
+}
+
+/* ---------- modal queue ---------- */
+function modal(title,html,btns,onOpen){Q.push({title,html,btns,onOpen});if(!modalOpen)nextModal();}
+function nextModal(){
+  const m=Q.shift();
+  if(!m){modalOpen=false;$("modalScrim").classList.remove("show");render();return;}
+  modalOpen=true;
+  $("mTitle").textContent=m.title;
+  $("mBody").innerHTML=m.html;
+  const box=$("mBtns");box.innerHTML="";
+  (m.btns||[{t:"OK",main:true}]).forEach(b=>{
+    const el=document.createElement("button");
+    el.className="mb"+(b.main?" main":"")+(b.dim?" dim":"");
+    el.innerHTML=b.t+(b.s?"<small>"+b.s+"</small>":"");
+    el.onclick=()=>{
+      if(b.keep){b.fn&&b.fn();return;}
+      if(b.fn){const r=b.fn();if(r===false)return;}
+      nextModal();
+      save();render();
+    };
+    box.appendChild(el);
+  });
+  $("modalScrim").classList.add("show");
+  $("mBody").scrollTop=0;
+  if(m.onOpen)m.onOpen();
+}
+function closeNow(){nextModal();save();render();}
+function note(text,title){modal(title||"DEF CON TRAIL","<p>"+text+"</p>");}
+
+/* ---------- events ---------- */
+function tagsNow(moving){return moving?nextL().tags:here().tags;}
+function pickFriend(){const f=friendsPresent();return f.length?pick(f):null;}
+function pickAny(){const p=present();return p.length?pick(p):null;}
+
+const EV=[
+  {w:t=>1.1,f(){const m=pickAny();if(!m||m.inj)return null;const leg=chance(.5);m.inj=leg?"broken leg":"broken arm";m.hp-=leg?30:20;
+    return m.h+(leg?pick([" broke a leg jumping off the stage at Hacker Karaoke."," broke a leg on an escalator that was not moving."," broke a leg tripping over a cable run in the hallway."]):pick([" broke an arm arm wrestling a Goon."," broke an arm diving to catch a falling badge."," broke an arm in a lockpicking accident nobody can explain."]));}},
+  {w:t=>1+(phoneDead()?2.5:0)+(S.booze==="blackout"?1.5:0)+(t.includes("con")?.5:0),f(){const m=pickFriend();if(!m)return null;m.lost=true;
+    return m.h+pick([" wandered into the Car Hacking Village and stopped answering texts."," followed a guy with a cool badge and was never seen again."," went to get a drink and got absorbed by the hallway con."," said they were going to the bathroom an hour ago."," got lost in the wild somewhere between two casinos."])+(phoneDead()?" Your phone is dead, so good luck finding them.":"");}},
+  {w:t=>lostOnes().length?(phoneDead()?.6:2.2):0,f(){const m=pick(lostOnes());m.lost=false;let x="";
+    if(m.ctf&&chance(.35)){S.blackBadge=true;x=" Their CTF team won. They are holding a Black Badge and crying.";}
+    m.ctf=false;const s=R(1,4);S.shirts+=s;
+    return "Found "+m.h+"! They show up with "+s+" new shirts and zero explanation."+x;}},
+  {w:t=>t.includes("casino")?2.2:.6,f(){S.steps=Math.max(here().at,S.steps-3000);drainPhone(8);
+    if(S.block===2&&S.room<=0){S.forceSleep="hallway";return "You got lost in the hotel. Every hallway has the same carpet. You give up and decide this hallway is home tonight.";}
+    return "You got lost in the hotel. Every hallway has the same carpet. You lose a few thousand steps walking in circles.";}},
+  {w:t=>.6+S.day*.18,f(){const m=pickAny();if(!m||m.sick)return null;m.sick="con crud";return m.h+" has the con crud early. Coughing, sniffling, still going to talks.";}},
+  {w:t=>.6,f(){const m=pickAny();if(!m||m.sick)return null;m.sick="food poisoning";m.hp-=10;return m.h+" has food poisoning from a buffet crab leg.";}},
+  {w:t=>t.includes("outdoor")?2.6:.3,f(){const m=pickAny();if(!m)return null;m.hp-=15;if(!m.sick)m.sick="heat exhaustion";return m.h+" has heat exhaustion. Vegas in August is no joke.";}},
+  {w:t=>(S.block===2&&S.booze!=="dry")?2:.3,f(){const m=pickAny();if(!m)return null;m.sick="bad alcohol";m.hp-=12;return "Somebody poured shots from a bottle labeled only with a QR code. "+m.h+" is paying for it.";}},
+  {w:t=>t.includes("outdoor")?1.5:.2,f(){drainPhone(25);return "Your phone overheated in the sun and shut itself off to cool down. It lost a big chunk of charge.";}},
+  {w:t=>S.cables>0?.8:0,f(){S.cables--;return "A charging cable frayed down to bare wire. Into the trash it goes.";}},
+  {w:t=>S.banks>0?.5:0,f(){S.banks--;return "A power bank swelled up like a pillow. You leave it in a hotel trash can very carefully.";}},
+  {w:t=>t.includes("casino")?.8:.3,f(){const c=Math.min(S.cash,R(40,140));S.cash-=c;return "Pickpocket on the casino floor. You lost $"+c+".";}},
+  {w:t=>.35,f(){const c=Math.min(S.cash,150);S.cash-=c;return "You used a casino ATM during con week. It was skimmed. You lost $"+c+" and every hacker who hears about it laughs at you.";}},
+  {w:t=>t.includes("con")?.8:0,f(){S.vibes-=8;return "Your cleartext password just showed up on the Wall of Sheep. Everyone in the room is looking at you.";}},
+  {w:t=>.6,f(){drainPhone(15);S.vibes-=6;return "You joined the hotel Wi-Fi. Your phone made a lot of new friends and burned through battery doing it.";}},
+  {w:t=>t.includes("con")?1.2:.5,f(){const c=Math.min(S.cash,R(20,60));S.cash-=c;S.badges++;return "A badgelife maker sold you a hand soldered hacker badge out of a backpack for $"+c+". It blinks.";}},
+  {w:t=>t.includes("con")?1.4:.6,f(){const n=R(1,3);S.sao+=n;return "You traded stickers for "+n+" SAO"+(n>1?"s":"")+". Your badge looks more like a tiny city every hour.";}},
+  {w:t=>(t.includes("con")||t.includes("vendor"))?1.5:.5,f(){const n=R(4,15);S.shirts+=n;return "You found a shitload of hacker t-shirts in a box marked FREE. "+n+" shirts added to the bag.";}},
+  {w:t=>1.2,f(){const n=R(8,30);S.stickers+=n;return "Sticker table jackpot. "+n+" stickers added. Your laptop lid is running out of room.";}},
+  {w:t=>(t.includes("con")||t.includes("party"))?1.1:.4,f(){S.celebs++;S.vibes+=15;const c=pick(CELEBS);let x="";
+    if(c.indexOf("phreak")>=0||chance(.3)){if(S.invites.indexOf("phreak")<0){S.invites.push("phreak");x=" They hand you an invite to the Telephreak Party.";}}
+    return "Chance encounter with "+c+". They were nice about it and took a selfie."+x;}},
+  {w:t=>S.day<=4?1.3:.4,f(){let x="";if(S.invites.indexOf("vendor")<0){S.invites.push("vendor");x=" You are on the list for vendor parties now.";}S.snacks+=4;S.drinks+=2;
+    return "A giant security corporation invited you to an event with free food and booze."+x;}},
+  {w:t=>t.includes("casino")?.9:.3,f(){const n=R(1,2);S.room+=n;return "Free hotel comp! A host gave you "+n+" free room night"+(n>1?"s":"")+" for no clear reason.";}},
+  {w:t=>t.includes("con")?.8:0,f(){S.steps=Math.max(here().at,S.steps-1500);return "A Goon yells KEEP MOVING. You keep moving. In the wrong direction.";}},
+  {w:t=>t.includes("con")?.6:.2,f(){S.shirts++;S.vibes+=10;return "You spotted the fed. Nobody believes you, but you got a shirt that says you did.";}},
+  {w:t=>t.includes("con")?.5:0,f(){const m=pickAny();if(!m)return null;const c=Math.min(S.cash,20);S.cash-=c;S.vibes+=20;return m.h+" got a mohawk at Mohawk Con for charity. It looks incredible and terrible.";}},
+  {w:t=>(t.includes("con")&&!S.lockpick)?.7:0,f(){S.lockpick=true;S.vibes+=8;return "You sat down at Lockpick Village and opened your first padlock. You feel unstoppable.";}},
+  {w:t=>t.includes("con")?.5:0,f(){if(S.room>0){S.room--;return "A very friendly person at the Social Engineering Village talked you out of a hotel room key. You lost a room night.";}S.vibes-=5;return "Someone at the Social Engineering Village got your mother's maiden name in under a minute.";}},
+  {w:t=>t.includes("casino")?.7:.2,f(){present().forEach(m=>m.hp-=4);return "Every elevator is full of hackers. You take the stairs. Many, many stairs.";}},
+  {w:t=>.5,f(){const c=Math.min(S.cash,R(30,70));S.cash-=c;return "Rideshare surge pricing during the con. You paid $"+c+" to go a mile.";}},
+  {w:t=>1,f(){chargePhone(40);return "You found a working outlet behind a slot machine. Your phone soaked up some charge.";}},
+  {w:t=>.4,f(){chargePhone(50);S.vibes-=5;return "A free phone charging kiosk. At DEF CON. You plugged in anyway. Your phone charged and now it shows a skull on boot.";}},
+  {w:t=>t.includes("outdoor")?.9:.1,f(){S.steps=Math.max(here().at,S.steps-2000);present().forEach(m=>m.hp-=6);return "A monsoon storm rolled in out of nowhere and flooded the street. Everybody is soaked.";}},
+  {w:t=>S.badge?.35:0,f(){if(S.lockpick&&chance(.5))return "Your badge fell off the lanyard. Good thing you can pick the clasp back together. Crisis avoided.";S.badge=false;return "Your DEF CON badge fell off the lanyard somewhere. It is gone.";}},
+  {w:t=>(t.includes("con")&&S.day>=3)?.6:0,f(){const m=pickFriend();if(!m)return null;m.lost=true;m.ctf=true;return m.h+" got recruited onto a CTF team and vanished into the contest room.";}},
+  {w:t=>t.includes("vendor")?1:0,f(){S.shirts++;drainPhone(5);return "A sales rep scanned your badge. You got a shirt and nine follow up emails.";}},
+  {w:t=>.9,f(){const n=R(4,10);S.drinks+=n;return "Somebody handed you a fistful of drink tickets. "+n+" drinks added.";}},
+  {w:t=>t.includes("con")?.5:0,f(){const c=Math.min(S.cash,R(25,60));S.cash-=c;S.shirts++;S.vibes+=10;return "You donated $"+c+" to the EFF booth and got the member shirt.";}},
+  {w:t=>.25+(S.booze==="blackout"?.6:0),f(){const c=Math.floor(S.cash/2);S.cash-=c;return "You lost your wallet. Half your cash is gone. The other half was in your shoe.";}},
+  {w:t=>S.day>=3&&S.invites.indexOf("goth")<0?.5:0,f(){S.invites.push("goth");return "Someone in all black slipped you a card for Goth Con.";}},
+  {w:t=>S.day>=4&&S.invites.indexOf("suite")<0?.5:0,f(){S.invites.push("suite");return "A sticker on the bathroom mirror has a room number and a time. You now know where the mystery suite party is.";}},
+  {w:t=>.6,f(){S.water+=6;return "A Goon handed you a stack of water bottles and told you to hydrate or die.";}},
+  {w:t=>.5,f(){const s=R(3,9);S.shirts+=s;S.banks++;S.cables++;return "You found an abandoned rolling suitcase full of swag. "+s+" shirts, a power bank, and a cable.";}},
+  {w:t=>S.block===0?1:.3,f(){S.snacks+=15;return "You found an unattended conference breakfast spread. You filled your bag.";}},
+  {w:t=>(S.water>0||S.snacks>0)?.4:0,f(){S.water=Math.floor(S.water/2);S.snacks=Math.floor(S.snacks/2);return "Somebody walked off with your bag of supplies. You lost half your water and snacks.";}},
+  {w:t=>S.phones.length>1?.4:0,f(){S.phones.pop();return "Your burner phone got burned. You did not even know that could happen literally.";}},
+  {w:t=>.5,f(){S.vibes+=10;present().forEach(m=>m.hp+=6);return "You found the chill out lounge. Beanbags, ambient music, and nobody asking you about AI.";}}
+];
+
+function randomEvent(moving){
+  const t=tagsNow(moving);
+  let tot=0;const ws=EV.map(e=>{const w=Math.max(0,e.w(t));tot+=w;return w;});
+  for(let tries=0;tries<6;tries++){
+    let r=Math.random()*tot;let i=0;
+    for(;i<ws.length;i++){r-=ws[i];if(r<=0)break;}
+    const e=EV[Math.min(i,EV.length-1)];
+    const txt=e.f();
+    if(txt){log(txt);note(txt);return;}
+  }
+}
+
+/* ---------- time ---------- */
+function tick(kind){
+  const moving=kind==="move";
+  // phone
+  const base=moving?{chill:8,grind:12,full:16}[S.pace]:6;
+  drainPhone(base+R(0,4));
+  // water
+  const crew=present();
+  const outside=has("outdoor",moving?nextL():here());
+  if(S.block===1||outside){
+    const need=crew.length*(outside?2:1);
+    if(S.water>=need){S.water-=need;}
+    else{S.water=0;crew.forEach(m=>m.hp-=10);log("Not enough water. Everybody is getting cooked by the heat.");}
+  }
+  // meals
+  if(S.block===0||S.block===2){
+    if(S.meals==="skip"){crew.forEach(m=>m.hp-=6);}
+    else{
+      const per=S.meals==="feast"?2:1;const need=crew.length*per;
+      if(S.snacks>=need){S.snacks-=need;S.d621.meals++;if(per===2)crew.forEach(m=>m.hp+=3);}
+      else{
+        const short=need-S.snacks;S.snacks=0;const cost=short*16;
+        if(S.cash>=cost){S.cash-=cost;S.d621.meals++;log("Out of snacks. You paid $"+cost+" for overpriced casino food.");}
+        else{crew.forEach(m=>m.hp-=8);log("Out of snacks and out of cash for food. Stomachs are growling.");}
+      }
+    }
+  }
+  // booze
+  if(S.block===2){
+    if(S.booze==="dry"){S.vibes-=3;}
+    else{
+      const per=S.booze==="blackout"?2:1;const need=crew.length*per;
+      if(S.drinks>=need){S.drinks-=need;S.vibes+=per===2?12:6;if(per===2)crew.forEach(m=>m.hp-=6);}
+      else{S.drinks=0;S.vibes-=10;log("No booze left. The crew is grumpy and the vibes took a hit.");}
+    }
+  }
+  // pace wear
+  const wear=moving?{chill:0,grind:2,full:5}[S.pace]:0;
+  crew.forEach(m=>{
+    m.hp-=wear;
+    if(m.sick){m.hp-=6;if(chance(.14)){log(m.h+" shook off the "+m.sick+".");m.sick=null;}}
+    if(m.inj){m.hp-=2;if(chance(.06)){log(m.h+" can use that "+m.inj.replace("broken ","")+" again. Mostly.");m.inj=null;}}
+    m.hp=clamp(m.hp,0,100);
+  });
+  S.vibes=clamp(S.vibes-2,0,100);
+  // vibes too low, friends bail
+  if(S.vibes<20&&chance(.25)){const m=pickFriend();if(m){m.gone=true;log(m.h+" says the vibes are cooked and flies home early.");note(m.h+" says the vibes are cooked and flies home early.");}}
+  // collapse
+  S.party.forEach((m,i)=>{
+    if(!m.gone&&m.hp<=0){
+      if(i===0){gameOver("You collapsed in a hallway and woke up on a flight home. You have died of con crud.");}
+      else{m.gone=true;const t=m.h+" has died of con crud. Not literally. They flew home to sleep for a week.";log(t);note(t);}
+    }
+  });
+  if(S.over)return;
+  // random event
+  if(chance(moving?.5:.28))randomEvent(moving);
+  // advance time
+  if(S.block===2){endNight();}
+  else{S.block++;}
+}
+
+function endNight(){
+  if(S.day>=6){finish();return;}
+  sleepPrompt();
+}
+
+function sleepPrompt(){
+  if(S.forceSleep==="hallway"){
+    S.forceSleep=null;
+    doSleep("hallway");
+    return;
+  }
+  const b=[];
+  if(S.room>0)b.push({t:"Sleep in your hotel room",s:"Bed, shower, outlet. "+S.room+" room night"+(S.room>1?"s":"")+" left.",main:true,fn:()=>doSleep("room")});
+  b.push({t:"Book a room at con rates",s:"$389 tonight. Prices are criminal.",fn:()=>{if(S.cash<389){note("You cannot afford that. The front desk laughs politely.");sleepPrompt();return;}S.cash-=389;S.room++;doSleep("room");}});
+  b.push({t:"Sleep in a hotel hallway",s:"Free. You still cannot figure out how to leave anyway.",fn:()=>doSleep("hallway")});
+  b.push({t:"Sleep in a stranger's car in the parking garage",s:"Free. Closest thing to a hotel room you can find.",fn:()=>doSleep("car")});
+  b.push({t:"Stay up all night at the hallway con",s:"No sleep, maximum stories.",fn:()=>doSleep("none")});
+  modal("NIGHT FALLS ON "+DAYS[S.day].toUpperCase(),"<p>Where are you sleeping tonight?</p><p>Crew health is "+crewHealth()+". Vibes are "+vibeWord(S.vibes).toLowerCase()+".</p>",b);
+}
+
+function doSleep(kind){
+  const crew=present();let t="";
+  if(kind==="room"){
+    S.room--;crew.forEach(m=>{m.hp+=25;if(m.sick&&chance(.3))m.sick=null;});S.vibes+=10;
+    S.phones=S.phones.map(()=>100);S.d621.sleep=true;S.d621.shower=true;
+    t="Real bed, real shower, every phone on a charger. You feel like a person again.";
+  }else if(kind==="hallway"){
+    crew.forEach(m=>m.hp+=8);
+    if(chance(.4)){S.vibes-=8;t="You slept on the hallway carpet until security woke you up and asked you very nicely to leave. You still could not find the exit.";}
+    else{t="You slept on the hallway carpet next to an ice machine. It hums. You hum back.";}
+  }else if(kind==="car"){
+    crew.forEach(m=>m.hp+=12);S.d621.sleep=chance(.5);
+    if(chance(.28)){S.vibes-=10;const c=Math.min(S.cash,R(0,40));S.cash-=c;t="The owner came back at four in the morning. Everybody sprinted out of the garage."+(c?" Somebody dropped $"+c+" running.":"");}
+    else{t="The car was unlocked and the seats recline. Nobody ever came back for it. Great night.";}
+  }else{
+    crew.forEach(m=>m.hp-=10);S.vibes+=8;
+    if(chance(.5)){const s=R(1,4);S.shirts+=s;t="You stayed up all night trading stories in the hallway con and came out with "+s+" shirts.";}
+    else{S.stickers+=R(5,15);t="You stayed up all night in the hallway con. You learned three exploits and forgot your own name.";}
+  }
+  crew.forEach(m=>m.hp=clamp(m.hp,0,100));
+  S.vibes=clamp(S.vibes,0,100);
+  log(t);
+  modal("MORNING","<p>"+t+"</p>"+morning(),[{t:"OK",main:true}]);
+}
+
+function morning(){
+  const d=S.d621;
+  const okS=d.sleep,okM=d.meals>=2,okH=d.shower;
+  let out="<p>6 2 1 check for "+DAYS[S.day]+": sleep <b class='"+(okS?"ok":"bd")+"'>"+(okS?"yes":"no")+"</b>, two meals <b class='"+(okM?"ok":"bd")+"'>"+(okM?"yes":"no")+"</b>, shower <b class='"+(okH?"ok":"bd")+"'>"+(okH?"yes":"no")+"</b>.</p>";
+  if(okS&&okM&&okH){S.vibes=clamp(S.vibes+8,0,100);out+="<p>You honored the 6 2 1 rule. Vibes up.</p>";}
+  else if(!okS&&!okM&&!okH){S.vibes=clamp(S.vibes-8,0,100);out+="<p>You broke every part of the 6 2 1 rule. Vibes down.</p>";}
+  S.d621={sleep:false,meals:0,shower:false};
+  S.day++;S.block=0;
+  out+="<p>It is "+DAYS[S.day]+" morning.</p>";
+  return out;
+}
+
+/* ---------- actions ---------- */
+let walking=0;
+function actContinue(){
+  if(S.over)return;
+  if(S.at>=L.length-1){log("You are at Closing Ceremonies. Time keeps moving.");tick("act");save();render();return;}
+  const nx=nextL();
+  let gain={chill:5000,grind:7000,full:9000}[S.pace];
+  if(S.block===2)gain*=.6;
+  if(you().inj==="broken leg")gain*=.6;
+  gain=Math.round(gain*(0.85+Math.random()*.3));
+  S.steps=Math.min(S.steps+gain,nx.at);
+  walking=performance.now();
+  log("You walked "+gain.toLocaleString()+" steps toward "+nx.n+".");
+  tick("move");
+  if(!S.over&&S.steps>=nx.at)arrive(S.at+1);
+  save();render();
+}
+
+function arrive(i){
+  S.at=i;const l=L[i];
+  log("Arrived at "+l.n+".");
+  if(l.cross){crossing(l);return;}
+  let x="<p>"+l.d+"</p>";
+  if(l.shop)x+="<p>There is a shop here.</p>";
+  modal(l.n.toUpperCase(),x,[{t:"Look around",main:true,fn:()=>special(l)}]);
+}
+
+function special(l){
+  if(!l.special||S.seenSpecial[l.special])return;
+  S.seenSpecial[l.special]=true;
+  if(l.special==="shoot"){
+    modal("DEF CON SHOOT","<p>Hackers out in the desert sending rounds downrange. Ammo costs money, and the sun costs health.</p>",[
+      {t:"Join the shoot",s:"$40 for ammo. Big vibes. Big heat.",main:true,fn:()=>{const c=Math.min(S.cash,40);S.cash-=c;S.vibes=clamp(S.vibes+20,0,100);present().forEach(m=>m.hp=clamp(m.hp-10,0,100));if(S.water>0)S.water=Math.max(0,S.water-present().length);S.shirts++;note("You joined the DEF CON Shoot. Loud, sunburned, and you got a shoot shirt.");log("Joined the DEF CON Shoot.");}},
+      {t:"Watch from the shade",fn:()=>{S.vibes=clamp(S.vibes+6,0,100);note("You watched from the shade with a warm water bottle.");}}
+    ]);
+  }else if(l.special==="linecon"){
+    S.vibes=clamp(S.vibes+6,0,100);drainPhone(15);
+    S.stickers+=R(10,25);
+    note("LineCon ate a big chunk of your day. The line wrapped around the building twice. You made friends, traded a pile of stickers, and your phone took a beating. The badge table is open in the shop.","LINECON");
+  }else if(l.special==="bbq"){
+    S.snacks+=12;S.drinks+=4;S.vibes=clamp(S.vibes+12,0,100);
+    let x="Free food off the grill and a cooler full of drinks.";
+    if(chance(.6)){S.celebs++;x+=" You ate a burger next to "+pick(CELEBS)+".";}
+    note(x,"TOXIC BBQ");log("Ate at the Toxic BBQ.");
+  }else if(l.special==="villages"){
+    modal("THE VILLAGES","<p>Pick a village to spend some time in.</p>",[
+      {t:"Lockpick Village",s:"Learn to pick locks.",fn:()=>{S.lockpick=true;S.vibes=clamp(S.vibes+8,0,100);note("You opened a padlock, a handcuff, and a door you were not supposed to open.");}},
+      {t:"Car Hacking Village",s:"Long line, cool cars.",fn:()=>{S.shirts+=2;S.sao++;note("You plugged into a car's CAN bus and made the wipers dance. Got a shirt and an SAO.");}},
+      {t:"Voting Machine Village",s:"Very serious, very fun.",fn:()=>{S.stickers+=10;S.vibes=clamp(S.vibes+6,0,100);note("You watched somebody pop a voting machine open with a hotel key. You got a pile of stickers.");}},
+      {t:"Hardware Hacking Village",s:"Solder something.",fn:()=>{S.badges++;S.cables++;note("You soldered a badge kit together and somebody gave you a spare cable.");}},
+      {t:"Social Engineering Village",s:"Watch live vishing calls.",fn:()=>{S.vibes=clamp(S.vibes+10,0,100);if(S.invites.indexOf("suite")<0)S.invites.push("suite");note("You watched a contestant talk a stranger out of their badge number. Somebody in the crowd invited you to a suite party.");}}
+    ]);
+  }else if(l.special==="roller"){
+    modal("HIGH ROLLER","<p>A full cabin of hackers is about to ride the wheel with an open bar.</p>",[
+      {t:"Ride the High Roller",s:"$45. Thirty minutes of views and drinks.",main:true,fn:()=>{const c=Math.min(S.cash,45);S.cash-=c;S.vibes=clamp(S.vibes+15,0,100);S.drinks+=2;drainPhone(10);note("You rode the High Roller with a cabin full of hackers. You took way too many photos.");}},
+      {t:"Skip it",fn:()=>{}}
+    ]);
+  }else if(l.special==="circle"){
+    S.vibes=clamp(S.vibes+8,0,100);
+    let x="The Circle Bar is packed with hackers.";
+    if(chance(.5)){S.celebs++;x+=" You ended up at a table with "+pick(CELEBS)+".";}
+    if(chance(.4)&&S.invites.indexOf("goth")<0){S.invites.push("goth");x+=" Someone in all black invites you to Goth Con.";}
+    note(x,"CIRCLE BAR");
+  }
+}
+
+function crossing(l){
+  const opts=[];
+  const lostP=l.cross==="caesars"?.6:.4;
+  if(l.cross!=="strip")opts.push({t:"Wander through the casino",s:"Free. You might get lost.",fn:()=>{
+    if(chance(lostP)){drainPhone(10);present().forEach(m=>m.hp=clamp(m.hp-4,0,100));
+      if(chance(.4)){const m=pickFriend();if(m){m.lost=true;}}
+      log("Lost in the casino.");note("You got hopelessly lost on the casino floor. Same carpet, same slot machines, no clocks. It took forever to find daylight."+(lostOnes().length?" Somebody fell behind.":""));tick("act");}
+    else note("You found your way through on the first try. That never happens.");
+  }});
+  if(l.cross==="mandalay")opts.push({t:"Take the free tram",s:"Free. Runs between the casinos at the south end.",fn:()=>{if(chance(.2)){note("The tram is down for maintenance. You walk.");present().forEach(m=>m.hp=clamp(m.hp-4,0,100));}else note("The tram was packed with lanyards. You made it.");}});
+  if(l.cross!=="mandalay")opts.push({t:"Ride the monorail",s:"$6 a person.",fn:()=>{const c=6*present().length;if(S.cash<c){note("You cannot afford the monorail.");crossing(l);return;}S.cash-=c;if(chance(.15)){note("The monorail broke down between stations. You sat there sweating.");tick("act");}else note("The monorail glided right past the traffic.");}});
+  opts.push({t:"Ask a Goon for directions",s:"Free and safe, but it costs time.",fn:()=>{note("The Goon gave perfect directions and a lecture about hydration.");tick("act");}});
+  opts.push({t:"Take a rideshare",s:"Costs money. Surge pricing is likely.",fn:()=>{const surge=chance(.35);const c=surge?R(60,95):R(18,32);if(S.cash<c){note("Your card was declined. You walk.");tick("act");return;}S.cash-=c;note(surge?"Surge pricing hit hard. You paid $"+c+".":"You paid $"+c+" for the ride. Easy.");}});
+  if(l.cross==="strip"){
+    opts.push({t:"Use the pedestrian bridge",s:"Free. Crowded and slow.",fn:()=>{present().forEach(m=>m.hp=clamp(m.hp-3,0,100));if(chance(.3)){const c=Math.min(S.cash,20);S.cash-=c;note("A costumed character demanded $"+c+" for a photo you did not ask for.");}else note("You shuffled across the bridge with ten thousand tourists.");}});
+    opts.push({t:"Jaywalk across the Strip",s:"Fast. Very dumb.",fn:()=>{if(chance(.3)){const m=pickAny();if(m){m.inj="broken leg";m.hp=clamp(m.hp-30,0,100);note(m.h+" got clipped by a rental car mirror and broke a leg.");}}else note("You made it. Do not do that again.");}});
+  }
+  opts.push({t:"Walk outside in the heat",s:"Free. Costs water and health.",fn:()=>{const need=present().length*2;if(S.water>=need){S.water-=need;note("You walked outside and drank a lot of water.");}else{S.water=0;present().forEach(m=>m.hp=clamp(m.hp-12,0,100));note("You walked outside without enough water. Everyone is cooked.");}if(chance(.3))drainPhone(20);}});
+  modal(l.n.toUpperCase(),"<p>"+l.d+"</p><p>How do you get across?</p>",opts);
+}
+
+function actCharge(){
+  const b=[];
+  b.push({t:"Use a power bank",s:S.banks+" bank"+(S.banks===1?"":"s")+", "+S.cables+" cable"+(S.cables===1?"":"s")+". Adds a big charge.",fn:()=>{
+    if(S.banks<1||S.cables<1){note(S.banks<1?"You have no power banks.":"You have no cable. A power bank without a cable is a brick.");return;}
+    if(S.phones.every(p=>p>=100)){note("Every phone is already full.");return;}
+    S.banks--;chargePhone(60);log("Used a power bank.");note("Plugged in a power bank. It is spent now.");}});
+  b.push({t:"Hunt for an outlet",s:"Takes time. Might work.",fn:()=>{
+    const p=has("casino")?.75:has("con")?.6:.4;
+    if(chance(p)){chargePhone(45);note(pick(["Found an outlet behind a slot machine.","Found an outlet under a bench in the hallway. Six other hackers are already plugged into a power strip there.","Found an outlet in the bathroom. Do not think about it."]));}
+    else note("Every outlet is taken. Somebody has a power strip with nine phones on it.");
+    tick("act");}});
+  b.push({t:"Use a sketchy charging kiosk",s:"Instant charge. At DEF CON. Bold.",fn:()=>{chargePhone(50);if(chance(.35)){S.vibes=clamp(S.vibes-10,0,100);drainPhone(10);note("Juice jacked. Your phone now plays a sea shanty on every notification.");}else note("It charged. Nothing bad happened. That you know of.");}});
+  b.push({t:"Never mind"});
+  modal("CHARGE","<p>"+phoneLine()+"</p>",b);
+}
+function phoneLine(){return S.phones.map((p,i)=>(i===0?"Main phone ":"Burner "+i+" ")+p+"%").join(", ");}
+
+function actRest(){
+  if(S.block===2){log("You called it a night early.");present().forEach(m=>{m.hp=clamp(m.hp+6,0,100);});endNight();save();render();return;}
+  present().forEach(m=>{m.hp=clamp(m.hp+12,0,100);if(m.sick&&chance(.35)){log(m.h+" rested off the "+m.sick+".");m.sick=null;}});
+  S.vibes=clamp(S.vibes+2,0,100);
+  log("You rested in the chill out lounge.");
+  tick("act");save();render();
+}
+
+function actTalk(){
+  const l=here();let t=pick(TIPS);
+  if(has("blackhat"))t=pick(["Black Hat Business Hall passes are free. The briefings are not.",t]);
+  if(has("bsides"))t=pick(["BSides runs on volunteers. Buy a shirt, it keeps the lights on.",t]);
+  if(has("linecon"))t=pick(["The line moves faster if you stop asking people if the line is moving.",t]);
+  modal("A HACKER SAYS","<p>"+t+"</p>");
+}
+
+function actShop(){
+  const l=here();
+  if(!l.shop){note("There is no shop here. The next shop is at "+(L.find((x,i)=>i>S.at&&x.shop)||{n:"nowhere"}).n+".");return;}
+  openShop(l.shop);
+}
+
+function openShop(key,after){
+  const sh=SHOPS[key];const q={};
+  const price=k=>Math.round(ITEMS[k].p*(k==="badge"?1:sh.mult));
+  const rows=sh.items.map(k=>{
+    q[k]=0;
+    const extra=k==="badge"&&S.badge?"<small>You already have one</small>":"<small>"+ITEMS[k].u+"</small>";
+    return "<div class='shopRow'><div class='nm'>"+ITEMS[k].n+extra+"</div><div class='pr'>$"+price(k)+"</div><button class='qb' data-k='"+k+"' data-d='-1'>-</button><div class='qt' id='q_"+k+"'>0</div><button class='qb' data-k='"+k+"' data-d='1'>+</button></div>";
+  }).join("");
+  const html="<p>"+sh.name+". Cash: $<span id='shopCash'>"+S.cash+"</span></p>"+rows+"<div class='shopTot'><span>Total</span><span id='shopTot'>$0</span></div>";
+  const total=()=>sh.items.reduce((s,k)=>s+q[k]*price(k),0);
+  modal(sh.name.toUpperCase(),html,[
+    {t:"Buy",main:true,fn:()=>{
+      const t=total();if(t>S.cash){note("You do not have that much cash.");openShop(key,after);return;}
+      S.cash-=t;
+      for(const k of sh.items){const n=q[k];if(!n)continue;
+        if(k==="water")S.water+=n;else if(k==="snacks")S.snacks+=n;else if(k==="drinks")S.drinks+=n;
+        else if(k==="bank")S.banks+=n;else if(k==="cable")S.cables+=n;
+        else if(k==="burner"){for(let i=0;i<n;i++)S.phones.push(100);}
+        else if(k==="badge"){S.badge=true;}
+        else if(k==="merch"){S.shirts+=n;S.vibes=clamp(S.vibes+3*n,0,100);}
+      }
+      if(t>0)log("Spent $"+t+" at the "+sh.name+".");
+      if(after)after();
+    }},
+    {t:"Leave",fn:()=>{if(after)after();}}
+  ],()=>{
+    document.querySelectorAll(".qb").forEach(b=>{b.onclick=()=>{
+      const k=b.dataset.k,d=+b.dataset.d;let mx=ITEMS[k].max;if(k==="badge"&&S.badge)mx=0;
+      q[k]=clamp(q[k]+d,0,mx);$("q_"+k).textContent=q[k];
+      const t=total();$("shopTot").textContent="$"+t;$("shopTot").className=t>S.cash?"bd":"";
+    };});
+  });
+}
+
+function actParty(){
+  if(S.block!==2){note("Parties start at night. It is "+BLOCKS[S.block].toLowerCase()+" right now.");return;}
+  const list=PARTIES.filter(p=>p.days.indexOf(S.day)>=0);
+  const b=list.map(p=>{
+    const ok=canEnter(p);
+    return {t:p.n,s:ok?p.d:"Locked. "+lockWhy(p),dim:!ok,fn:()=>{if(!canEnter(p)){note("You cannot get into "+p.n+". "+lockWhy(p));return;}goParty(p);}};
+  });
+  b.push({t:"Skip the parties"});
+  modal("TONIGHT'S PARTIES","<p>"+DAYS[S.day]+" night. Pick one.</p>",b);
+}
+function canEnter(p){
+  if(!p.need)return true;
+  if(p.need==="badge")return S.badge;
+  if(p.need==="black")return S.shirts>0||S.invites.indexOf("goth")>=0;
+  return S.invites.indexOf(p.need)>=0;
+}
+function lockWhy(p){
+  if(p.need==="badge")return "You need your DEF CON badge.";
+  if(p.need==="black")return "Dress code is black. Find a hacker shirt or an invite.";
+  if(p.need==="vendor")return "You need a vendor invite.";
+  if(p.need==="phreak")return "You need an invite from a phreak.";
+  if(p.need==="suite")return "Nobody has told you where it is.";
+  return "";
+}
+function goParty(p){
+  if(S.parties.indexOf(p.id)<0)S.parties.push(p.id);
+  const out=[];
+  S.vibes=clamp(S.vibes+12,0,100);
+  if(p.id==="vroof"){S.snacks+=6;S.drinks+=6;S.shirts+=R(1,3);out.push("Open bar and sliders. A sales rep gave you a shirt and a branded fidget toy.");}
+  else if(p.id==="phreak"){S.celebs++;S.vibes=clamp(S.vibes+10,0,100);out.push("You made a call from a working payphone and met "+pick(CELEBS)+".");}
+  else if(p.id==="goth"){S.vibes=clamp(S.vibes+8,0,100);out.push("Black lights, black clothes, and the best dance floor of the week.");}
+  else if(p.id==="jeop"){S.vibes=clamp(S.vibes+10,0,100);S.stickers+=10;out.push("Hacker Jeopardy was loud and ridiculous. Your crew yelled answers at the screen all night.");}
+  else if(p.id==="suite"){S.badges+=chance(.5)?1:0;S.sao+=R(1,3);S.drinks+=4;out.push("The mystery suite party had a bathtub full of drinks and a table of rare SAOs.");}
+  else if(p.id==="queer"){S.vibes=clamp(S.vibes+8,0,100);S.stickers+=8;out.push("Everybody was friendly, the music was great, and you traded a pile of stickers.");}
+  else if(p.id==="karaoke"){S.vibes=clamp(S.vibes+6,0,100);out.push("You sang a song about packet loss. It went over well.");}
+  else if(p.id==="bpool"){S.drinks+=3;out.push("Pool, cheap beer, and talk about talks you missed.");}
+  else if(p.id==="lonely"){out.push("Met a bunch of solo hackers. Now you have a bigger crew in the group chat.");if(lostOnes().length&&chance(.5)){const m=pick(lostOnes());m.lost=false;out.push("Wait, "+m.h+" was there the whole time.");}}
+  else if(p.id==="dive"){S.drinks+=2;out.push("Your local DEF CON Group took over half the bar.");}
+  else{out.push("Everybody hugged and coughed on each other.");}
+  if(chance(.35)){S.celebs++;out.push("You ran into "+pick(CELEBS)+".");}
+  if(chance(.3)){const m=pickAny();if(m){m.sick="bad alcohol";m.hp=clamp(m.hp-10,0,100);out.push(m.h+" drank something from an unlabeled jug and regrets it.");}}
+  if(chance(.25)){const m=pickFriend();if(m){m.lost=true;out.push(m.h+" left with a group headed to another party and stopped answering.");}}
+  const t=p.n+". "+out.join(" ");
+  log(t);
+  modal(p.n.toUpperCase(),"<p>"+out.join("</p><p>")+"</p>",[{t:"OK",main:true,fn:()=>{tick("party");}}]);
+}
+
+/* ---------- gambling ---------- */
+function actGamble(){
+  let bet=Math.min(25,S.cash);let wag=0;let spins=0;let comped=false;
+  const html="<p>Cash: $<span id='gCash'>"+S.cash+"</span></p>"+
+    "<div class='betRow'><button class='qb' id='gm2'>-50</button><button class='qb' id='gm1'>-10</button><div class='qt' id='gBet'>$"+bet+"</div><button class='qb' id='gp1'>+10</button><button class='qb' id='gp2'>+50</button></div>"+
+    "<div class='res' id='gRes'>Pick a game. The house always wins. Usually.</div>";
+  const res=t=>{$("gRes").innerHTML=t;$("gCash").textContent=S.cash;bet=Math.min(bet,S.cash);$("gBet").textContent="$"+bet;render();};
+  const play=(kind)=>{
+    if(S.cash<=0){res("You are out of cash.");return;}
+    let b=kind==="ride"?S.cash:bet;if(b<=0){res("Raise your bet first.");return;}
+    if(b>S.cash)b=S.cash;
+    spins++;wag+=b;S.cash-=b;let won=0,t="";
+    if(kind==="roulette"||kind==="ride"){
+      if(chance(18/38)){won=b*2;t="Red hits. You win $"+b+".";}else t="Black. You lose $"+b+".";
+      if(kind==="ride")t="You let it ride on red with everything. "+t;
+    }else if(kind==="craps"){
+      if(chance(.493)){won=b*2;t="Seven on the come out. You win $"+b+".";}else t="Craps. You lose $"+b+".";
+    }else{
+      const r=Math.random();
+      if(r<.008){won=b*40;t="JACKPOT. The slot machine screams. You win $"+(won-b)+".";}
+      else if(r<.05){won=b*5;t="Three bars. You win $"+(won-b)+".";}
+      else if(r<.2){won=b*2;t="Two cherries. You win $"+b+".";}
+      else t="Nothing. The machine plays a happy song anyway.";
+    }
+    S.cash+=won;
+    if(chance(.2)){S.drinks++;t+=" A cocktail server brings you a free drink.";}
+    if(!comped&&wag>=500&&chance(.4)){comped=true;S.room++;t+=" The pit boss comps you a room night.";}
+    res(t);log(t);
+  };
+  modal("CASINO FLOOR",html,[
+    {t:"Roulette on red",s:"Almost even money.",keep:true,fn:()=>play("roulette")},
+    {t:"Craps pass line",s:"Best odds on the floor.",keep:true,fn:()=>play("craps")},
+    {t:"Slot machine",s:"Long shot jackpot.",keep:true,fn:()=>play("slots")},
+    {t:"Let it ride",s:"Everything on red. Lose everything or double it.",keep:true,fn:()=>play("ride")},
+    {t:"Walk away",main:true,fn:()=>{if(spins>=3){log("Gambling ate a chunk of time.");tick("act");}}}
+  ],()=>{
+    const set=d=>{bet=clamp(bet+d,0,S.cash);$("gBet").textContent="$"+bet;};
+    $("gm2").onclick=()=>set(-50);$("gm1").onclick=()=>set(-10);$("gp1").onclick=()=>set(10);$("gp2").onclick=()=>set(50);
+  });
+}
+
+/* ---------- swag hunt ---------- */
+function actSwag(){
+  if(!has("con")&&!has("vendor")){note("Swag hunting works at a con venue or a vendor hall. This is not one.");return;}
+  if(has("dc")&&!S.badge){note("A Goon stops you at the door. No badge, no swag hunting inside DEF CON.");return;}
+  modal("SWAG HUNT","<div class='huntInfo'><span id='hTime'>Time 20</span><span id='hGot'>Grabbed 0</span></div><canvas id='hunt'></canvas><p style='font-size:12px;margin:6px 0 0'>Tap the shirts, stickers, SAOs and badges. Do not tap the sales reps.</p>",[
+    {t:"Start",main:true,keep:true,fn:()=>startHunt()},
+    {t:"Leave",fn:()=>{if(huntState&&huntState.done){}else if(huntState){huntState.stop=true;}}}
+  ],()=>{huntState=null;drawHuntIdle();});
+}
+let huntState=null;
+function drawHuntIdle(){
+  const c=$("hunt");if(!c)return;const dpr=window.devicePixelRatio||1;c.width=c.clientWidth*dpr;c.height=c.clientHeight*dpr;
+  const g=c.getContext("2d");g.scale(dpr,dpr);g.fillStyle="#f2f7ff";g.fillRect(0,0,c.clientWidth,c.clientHeight);
+  g.fillStyle="#1f5fd6";g.font="bold 16px monospace";g.textAlign="center";g.fillText("VENDOR HALL",c.clientWidth/2,c.clientHeight/2-8);
+  g.font="12px monospace";g.fillStyle="#5a6b86";g.fillText("press Start",c.clientWidth/2,c.clientHeight/2+14);
+}
+function startHunt(){
+  if(huntState&&!huntState.done)return;
+  const c=$("hunt");const dpr=window.devicePixelRatio||1;const W=c.clientWidth,H=c.clientHeight;
+  c.width=W*dpr;c.height=H*dpr;const g=c.getContext("2d");g.setTransform(dpr,0,0,dpr,0,0);
+  const KINDS=[
+    {k:"shirt",e:"\u{1F455}",w:40,v:1},{k:"sticker",e:"\u{1F3F7}️",w:30,v:3},{k:"sao",e:"\u{1F50C}",w:14,v:1},{k:"badge",e:"\u{1F4DB}",w:5,v:1},{k:"rep",e:"\u{1F4BC}",w:22,v:0}
+  ];
+  const tot=KINDS.reduce((s,k)=>s+k.w,0);
+  const st={t0:performance.now(),items:[],got:{shirt:0,sticker:0,sao:0,badge:0},reps:0,last:0,done:false,stop:false,penalty:0};
+  huntState=st;
+  const spawn=()=>{let r=Math.random()*tot;let k=KINDS[0];for(const x of KINDS){r-=x.w;if(r<=0){k=x;break;}}
+    const left=chance(.5);const sp=(60+Math.random()*120)*(left?1:-1);
+    st.items.push({k,x:left?-20:W+20,y:30+Math.random()*(H-60),vx:sp,vy:(Math.random()-.5)*40,r:20});};
+  c.onpointerdown=ev=>{
+    if(st.done)return;const rc=c.getBoundingClientRect();const x=ev.clientX-rc.left,y=ev.clientY-rc.top;
+    for(let i=st.items.length-1;i>=0;i--){const it=st.items[i];if(Math.hypot(it.x-x,it.y-y)<it.r+8){
+      if(it.k.k==="rep"){st.reps++;st.penalty+=2;}else st.got[it.k.k]+=it.k.v;
+      st.items.splice(i,1);break;}}
+  };
+  const frame=now=>{
+    if(st.stop)return;
+    const el=(now-st.t0)/1000+st.penalty;const left=Math.max(0,20-el);
+    const dt=st.last?(now-st.last)/1000:0;st.last=now;
+    if(Math.random()<dt*3.2)spawn();
+    st.items.forEach(it=>{it.x+=it.vx*dt;it.y+=it.vy*dt;});
+    st.items=st.items.filter(it=>it.x>-40&&it.x<W+40);
+    g.fillStyle="#f2f7ff";g.fillRect(0,0,W,H);
+    g.strokeStyle="#c9d6ec";g.lineWidth=1;for(let x=0;x<W;x+=40){g.beginPath();g.moveTo(x,0);g.lineTo(x,H);g.stroke();}
+    g.fillStyle="#1f5fd6";g.fillRect(0,H-6,W,6);
+    g.textAlign="center";g.textBaseline="middle";g.font="28px sans-serif";
+    st.items.forEach(it=>g.fillText(it.k.e,it.x,it.y));
+    const n=st.got.shirt+st.got.sticker+st.got.sao+st.got.badge;
+    $("hTime").textContent="Time "+Math.ceil(left);$("hGot").textContent="Grabbed "+n;
+    if(left<=0){finishHunt(st);return;}
+    requestAnimationFrame(frame);
+  };
+  requestAnimationFrame(frame);
+}
+function finishHunt(st){
+  st.done=true;
+  S.shirts+=st.got.shirt;S.stickers+=st.got.sticker;S.sao+=st.got.sao;S.badges+=st.got.badge;
+  drainPhone(st.reps*3);
+  const t="Swag hunt haul: "+st.got.shirt+" shirts, "+st.got.sticker+" stickers, "+st.got.sao+" SAOs, "+st.got.badge+" badges."+(st.reps?" "+st.reps+" sales reps scanned you.":"");
+  log(t);
+  nextModal();
+  modal("SWAG HUNT RESULTS","<p>"+t+"</p>",[{t:"OK",main:true,fn:()=>{tick("act");}}]);
+  save();render();
+}
+
+/* ---------- supplies ---------- */
+function actBag(){
+  modal("SUPPLIES",suppliesHTML()+"<hr style='border:0;border-top:1px dashed #c9d6ec'>"+crewHTML());
+}
+function suppliesHTML(){
+  return "<div>Cash: $"+S.cash+"</div><div>Phones: "+phoneLine()+"</div><div>Power banks: "+S.banks+"</div><div>Cables: "+S.cables+"</div><div>Water: "+S.water+"</div><div>Snacks: "+S.snacks+"</div><div>Booze: "+S.drinks+"</div><div>Room nights: "+S.room+"</div><div>DEF CON badge: "+(S.badge?"<span class='ok'>yes</span>":"<span class='bd'>no</span>")+"</div>"+(S.blackBadge?"<div class='ok'>Black Badge: yes</div>":"")+(S.lockpick?"<div>Skill: lockpicking</div>":"");
+}
+function crewHTML(){
+  return S.party.map((m,i)=>{
+    let st;
+    if(m.gone)st="<span class='bd'>flew home</span>";
+    else if(m.lost)st="<span class='wn'>lost in the wild</span>";
+    else{st="<span class='"+(m.hp>=55?"ok":m.hp>=30?"wn":"bd")+"'>"+hpWord(m.hp)+"</span>";if(m.sick)st+=", "+m.sick;if(m.inj)st+=", "+m.inj;}
+    return "<div class='mem'>"+esc(m.h)+(i===0?" (you)":"")+": "+st+"</div>";
+  }).join("");
+}
+function swagHTML(){
+  return "<div>Shirts: "+S.shirts+"</div><div>Stickers: "+S.stickers+"</div><div>SAOs: "+S.sao+"</div><div>Hacker badges: "+S.badges+"</div><div>Celebrity encounters: "+S.celebs+"</div><div>Parties: "+S.parties.length+"</div>";
+}
+
+/* ---------- ending ---------- */
+function score(){
+  const surv=S.party.filter(m=>!m.gone).length;
+  let s=S.shirts*2+S.stickers+S.sao*10+S.badges*25+S.celebs*20+S.parties.length*15+surv*50+Math.floor(S.cash/10)+Math.floor(phoneCharge()/5);
+  if(S.at>=L.length-1)s+=100;
+  if(S.blackBadge)s+=300;
+  return s*S.mult;
+}
+function finish(){
+  if(S.over)return;
+  S.over=true;
+  lostOnes().forEach(m=>{m.lost=false;});
+  const cashOk=S.cash>0,phoneOk=!phoneDead();
+  const win=cashOk&&phoneOk;
+  const sc=score();
+  S.result={win,score:sc};
+  let h="<p>"+(S.at>=L.length-1?"You made it to Closing Ceremonies.":"The con ended while you were still at "+here().n+". You missed Closing Ceremonies.")+"</p>";
+  h+="<p>"+(win?"<b class='ok'>You survived DEF CON.</b> Cash left, phone still breathing.":"<b class='bd'>You limped out of DEF CON.</b> "+(!cashOk?"You are flat broke. ":"")+(!phoneOk?"Every phone is dead.":""))+"</p>";
+  h+="<p>Everybody ends with the con crud.</p>";
+  h+=S.party.map(m=>"<div class='mem'>"+esc(m.h)+(m.gone?" flew home early with the con crud.":" has the con crud.")+"</div>").join("");
+  h+="<p style='margin-top:10px'>"+swagHTML()+"</p>";
+  h+="<p>Profession: "+PROFS[S.prof].name+" (x"+S.mult+")</p><p><b>Final score: "+sc.toLocaleString()+"</b></p>";
+  log("The con is over. Final score "+sc+".");
+  modal("SUNDAY NIGHT",h,[{t:"Start a new run",main:true,fn:()=>{wipe();startFlow();}},{t:"Look at the journal"}]);
+  save();
+}
+function gameOver(t){
+  S.over=true;S.result={win:false,score:score()};
+  log(t);
+  modal("GAME OVER","<p>"+t+"</p><p>Final score: "+S.result.score.toLocaleString()+"</p>",[{t:"Start a new run",main:true,fn:()=>{wipe();startFlow();}},{t:"Look at the journal"}]);
+  save();
+}
+
+/* ---------- setup ---------- */
+function startFlow(){
+  S=null;Q.length=0;
+  const saved=load();
+  const b=[{t:"Start a new run",main:true,fn:chooseProf}];
+  if(saved&&!saved.over)b.unshift({t:"Continue your run",s:DAYS[saved.day]+" "+BLOCKS[saved.block].toLowerCase()+" at "+L[saved.at].n,fn:()=>{S=saved;render();log("Welcome back.");}});
+  modal("DEF CON TRAIL","<p>Hacker summer camp in Las Vegas. BSides, Black Hat, DEF CON, and every party in between.</p><p>Make it to Sunday night with cash in your pocket and charge on your phone. Everybody ends with the con crud.</p>",b);
+}
+function chooseProf(){
+  modal("WHO ARE YOU","<p>Pick your background.</p>",Object.keys(PROFS).map(k=>({t:PROFS[k].name,s:PROFS[k].desc+" Starting cash $"+PROFS[k].cash+".",fn:()=>chooseNames(k)})));
+}
+function chooseNames(k){
+  const def=["you","nullbyte","lockjaw","solderqueen","packetgremlin"];
+  const html="<p>Your handle and your crew.</p>"+def.map((d,i)=>"<input class='handle' id='hn"+i+"' maxlength='16' value='"+d+"' placeholder='"+(i===0?"your handle":"friend "+i)+"'>").join("");
+  modal("YOUR CREW",html,[{t:"Head to Vegas",main:true,fn:()=>{
+    const hs=def.map((d,i)=>{const v=($("hn"+i).value||"").trim();return v||d;});
+    S=newState(k,hs);
+    log("You landed at Harry Reid International Airport with $"+S.cash+".");
+    openShop("airport",()=>{
+      log("Pace is grinding, booze is social, meals are two a day. Change them in the menu.");
+      note("Monday morning. The slot machines at the gate are already ringing. Tap CONTINUE to hit the trail. Settings for pace, booze and meals are in the menu at the top left.","DAY ONE");
+    });
+  }}]);
+}
+
+/* ---------- render ---------- */
+function renderMsg(){
+  if(!S){$("msg").innerHTML="";return;}
+  $("msg").innerHTML=S.log.slice(0,40).map((t,i)=>"<p class='"+(i<2?"new":"old")+"'>"+esc(t)+"</p>").join("");
+  $("msg").scrollTop=0;
+}
+function render(){
+  if(!S){drawScene();return;}
+  $("sDay").textContent=DSHORT[S.day]+" "+BSHORT[S.block];
+  $("sCash").textContent="$"+S.cash;
+  $("sCash").className="v"+(S.cash<=0?" bd":S.cash<100?" wn":"");
+  const ci=curPhone();const ph=ci<0?0:S.phones[ci];
+  $("sPhone").textContent=(ci<0?"DEAD":ph+"%")+(S.phones.length>1?" x"+S.phones.length:"");
+  $("sPhone").className="v"+(ci<0?" bd":ph<25?" wn":"");
+  $("sVibes").textContent=vibeWord(S.vibes);
+  const l=here(),nx=nextL();
+  $("locLine").textContent=l.n+"  |  crew "+crewHealth();
+  $("hdrSub").innerHTML=DAYS[S.day]+"<br>"+BLOCKS[S.block];
+  if(S.at>=L.length-1){$("barFill").style.width="100%";$("barText").textContent="At Closing Ceremonies";}
+  else{const span=nx.at-l.at;const done=S.steps-l.at;const pct=clamp(done/span*100,0,100);$("barFill").style.width=pct+"%";$("barText").textContent=(nx.at-S.steps).toLocaleString()+" steps to "+nx.n;}
+  // button hints
+  $("aShop").classList.toggle("dim",!l.shop);
+  $("aParty").classList.toggle("dim",S.block!==2);
+  $("aSwag").classList.toggle("dim",!(has("con")||has("vendor"))||(has("dc")&&!S.badge));
+  $("aRest").textContent=S.block===2?"SLEEP":"REST";
+  // menu
+  document.querySelectorAll("#segPace button").forEach(b=>b.classList.toggle("on",b.dataset.v===S.pace));
+  document.querySelectorAll("#segBooze button").forEach(b=>b.classList.toggle("on",b.dataset.v===S.booze));
+  document.querySelectorAll("#segMeals button").forEach(b=>b.classList.toggle("on",b.dataset.v===S.meals));
+  $("mCrew").innerHTML=crewHTML();
+  $("mSupplies").innerHTML=suppliesHTML();
+  $("mSwag").innerHTML=swagHTML();
+  $("mTrail").innerHTML=L.map((x,i)=>"<div class='tl "+(i<S.at?"done":i===S.at?"here":"")+"'>"+(i<S.at?"done ":i===S.at?"here ":"")+x.n+"</div>").join("");
+  const inv={vendor:"Vendor parties",phreak:"Telephreak Party",goth:"Goth Con",suite:"Mystery suite party"};
+  $("mInv").innerHTML=S.invites.length?S.invites.map(k=>"<div>"+inv[k]+"</div>").join(""):"<div>No invites yet.</div>";
+  $("mLog").innerHTML=S.log.map(t=>"<p style='margin:0 0 6px'>"+esc(t)+"</p>").join("");
+  drawScene();
+}
+
+/* ---------- scene ---------- */
+const cv=$("scene");const cx=cv.getContext("2d");
+let sceneT=0;
+function drawScene(){
+  const dpr=window.devicePixelRatio||1;const W=cv.clientWidth,H=cv.clientHeight;
+  if(cv.width!==Math.round(W*dpr)||cv.height!==Math.round(H*dpr)){cv.width=Math.round(W*dpr);cv.height=Math.round(H*dpr);}
+  cx.setTransform(dpr,0,0,dpr,0,0);
+  const blk=S?S.block:0;const l=S?here():L[0];
+  const sky=cx.createLinearGradient(0,0,0,H);
+  if(blk===2){sky.addColorStop(0,"#5b6fb3");sky.addColorStop(1,"#c9b6e8");}
+  else if(blk===1){sky.addColorStop(0,"#8fc1ff");sky.addColorStop(1,"#ffe9c7");}
+  else{sky.addColorStop(0,"#b9dcff");sky.addColorStop(1,"#fff3dc");}
+  cx.fillStyle=sky;cx.fillRect(0,0,W,H);
+  // sun or moon
+  cx.fillStyle=blk===2?"#f4f1ff":"#ffd36b";cx.beginPath();cx.arc(W*.82,H*.22,blk===2?12:18,0,7);cx.fill();
+  if(blk===2){cx.fillStyle="#ffffff";for(let i=0;i<14;i++){cx.fillRect((i*73)%W,(i*37)%(H*.45),2,2);}}
+  // mountains
+  cx.fillStyle="#c7b9a6";cx.beginPath();cx.moveTo(0,H*.62);
+  for(let x=0;x<=W;x+=W/8){cx.lineTo(x,H*(.45+((x*13)%7)/60));}
+  cx.lineTo(W,H*.62);cx.closePath();cx.fill();
+  const desert=has("desert",l);
+  if(!desert){
+    // skyline
+    let seed=7;const rnd=()=>{seed=(seed*9301+49297)%233280;return seed/233280;};
+    for(let x=0;x<W;){const bw=14+rnd()*26;const bh=H*(.12+rnd()*.32);
+      cx.fillStyle=blk===2?"#3f4f86":"#8aa3c8";cx.fillRect(x,H*.66-bh,bw,bh);
+      cx.fillStyle=blk===2?"#ffe58a":"#dbe8ff";
+      for(let wy=H*.66-bh+4;wy<H*.64;wy+=7){for(let wx=x+3;wx<x+bw-3;wx+=6){if(rnd()>.45)cx.fillRect(wx,wy,2,3);}}
+      x+=bw+2;}
+    // high roller
+    const rx=W*.18,ry=H*.38,rr=Math.min(W,H)*.2;
+    cx.strokeStyle=blk===2?"#9fd0ff":"#1f5fd6";cx.lineWidth=2;cx.beginPath();cx.arc(rx,ry,rr,0,7);cx.stroke();
+    for(let a=0;a<12;a++){const an=a/12*Math.PI*2+sceneT*.0002;cx.beginPath();cx.moveTo(rx,ry);cx.lineTo(rx+Math.cos(an)*rr,ry+Math.sin(an)*rr);cx.stroke();
+      cx.fillStyle="#ffffff";cx.beginPath();cx.arc(rx+Math.cos(an)*rr,ry+Math.sin(an)*rr,3,0,7);cx.fill();}
+    cx.beginPath();cx.moveTo(rx,ry);cx.lineTo(rx-rr*.5,H*.66);cx.moveTo(rx,ry);cx.lineTo(rx+rr*.5,H*.66);cx.stroke();
+  }
+  // ground
+  cx.fillStyle=desert?"#e8d3a6":"#e9e2d2";cx.fillRect(0,H*.66,W,H*.34);
+  cx.fillStyle="#cfc6b3";cx.fillRect(0,H*.78,W,H*.08);
+  cx.fillStyle="#ffffff";for(let x=((sceneT*.05)%40)*-1;x<W;x+=40)cx.fillRect(x,H*.815,18,2);
+  // crew
+  if(S){
+    const crew=present();const moving=performance.now()-walking<900;
+    const baseX=W*.42;
+    crew.forEach((m,i)=>{
+      const x=baseX+i*22;const bob=moving?Math.sin(sceneT*.02+i)*2:0;const y=H*.78+bob;
+      cx.fillStyle=i===0?"#1f5fd6":["#d9534f","#2f9e6b","#8a5cd6","#e08a1e"][(i-1)%4];
+      cx.fillRect(x-5,y-22,10,14);
+      cx.fillStyle="#f1c9a5";cx.fillRect(x-4,y-30,8,8);
+      cx.fillStyle="#17233a";cx.fillRect(x-4,y-8,3,8);cx.fillRect(x+1,y-8,3,8);
+      cx.fillStyle="#3b82f6";cx.fillRect(x-1,y-20,3,4);
+    });
+    // rolling suitcase wagon
+    const sx=baseX-34;const sy=H*.78;
+    cx.fillStyle="#1f5fd6";cx.fillRect(sx,sy-24,22,20);
+    cx.fillStyle="#ffffff";cx.fillRect(sx+3,sy-20,7,5);cx.fillStyle="#ffd36b";cx.fillRect(sx+12,sy-13,6,6);
+    cx.strokeStyle="#17233a";cx.lineWidth=2;cx.beginPath();cx.moveTo(sx+22,sy-24);cx.lineTo(sx+30,sy-34);cx.stroke();
+    cx.fillStyle="#17233a";cx.beginPath();cx.arc(sx+5,sy-2,3,0,7);cx.arc(sx+17,sy-2,3,0,7);cx.fill();
+  }
+}
+function loop(t){sceneT=t;if(performance.now()-walking<900||true)drawScene();requestAnimationFrame(loop);}
+
+/* ---------- wiring ---------- */
+function guard(fn){return()=>{if(!S||modalOpen)return;if(S.over){note("This run is over. Start a new one from the menu.");return;}fn();save();render();};}
+$("aGo").onclick=guard(actContinue);
+$("aCharge").onclick=guard(actCharge);
+$("aRest").onclick=guard(actRest);
+$("aTalk").onclick=guard(actTalk);
+$("aSwag").onclick=guard(actSwag);
+$("aShop").onclick=guard(actShop);
+$("aParty").onclick=guard(actParty);
+$("aGamble").onclick=guard(actGamble);
+$("aBag").onclick=()=>{if(!S||modalOpen)return;actBag();};
+const openMenu=()=>{$("menu").classList.add("show");$("menuScrim").classList.add("show");if(S)render();};
+const closeMenu=()=>{$("menu").classList.remove("show");$("menuScrim").classList.remove("show");};
+$("burger").onclick=openMenu;$("menuClose").onclick=closeMenu;$("menuScrim").onclick=closeMenu;
+[["segPace","pace"],["segBooze","booze"],["segMeals","meals"]].forEach(([id,key])=>{
+  document.querySelectorAll("#"+id+" button").forEach(b=>b.onclick=()=>{if(!S)return;S[key]=b.dataset.v;save();render();});
+});
+$("mNotes").innerHTML=TIPS.map(t=>"<p style='margin:0 0 6px'>"+t+"</p>").join("");
+$("btnNew").onclick=()=>{closeMenu();if(modalOpen)return;modal("NEW RUN","<p>Throw away this run and start over?</p>",[{t:"Yes, start over",main:true,fn:()=>{wipe();startFlow();}},{t:"Keep playing"}]);};
+window.addEventListener("resize",()=>drawScene());
+
+requestAnimationFrame(loop);
+startFlow();
+})();
+</script>
+</body>
+</html>
