@@ -194,7 +194,7 @@ const L=[
   {n:"Las Vegas Boulevard",at:74000,tags:["outdoor"],cross:"strip",d:"Cross the Strip. Lanes of heat, rental cars, and costumed characters."},
   {n:"The LINQ, High Roller",at:79000,tags:["casino","outdoor"],shop:"strip",special:"roller",d:"A giant wheel full of hackers holding drinks and staring at the Strip."},
   {n:"Circle Bar",at:86000,tags:["casino","party"],special:"circle",d:"Where the hallway con goes after midnight."},
-  {n:"Hotel Party Suites",at:94000,tags:["party","casino"],d:"Every door has a sign, a sticker, or somebody with a clipboard."},
+  {n:"Hotel Party Suites",at:94000,tags:["party","casino"],special:"suites",d:"Every door has a sign, a sticker, or somebody with a clipboard."},
   {n:"Contest Stage, Hacker Jeopardy",at:102000,tags:["con","dc"],d:"Saturday night tradition. Loud, rowdy, and full of trivia."},
   {n:"DEF CON Closing Ceremonies",at:110000,tags:["con","dc","end"],d:"Black Badges, contest winners, and the long goodbye."}
 ];
@@ -246,6 +246,7 @@ const TIPS=[
   "Lockpick Village will teach you to open a padlock faster than you think.",
   "Hydrate. The Vegas heat does not care that you spend most of the day indoors.",
   "Do not plug your phone into a random USB port. Juice jacking is a meme for a reason.",
+  "Go up to go down. At tower parties every down elevator is already full, so get on one going up and ride it back down.",
   "Pack deodorant. Thirty thousand hackers in one building in August. Please.",
   "First timer? Go with the 2600 list. Deodorant, burner phone, power banks, spare cables, water, snacks, and cash for the badge.",
   "Real hackers carry a power bank, a backup power bank, and a cable for each one.",
@@ -408,7 +409,7 @@ const EV=[
   {w:t=>t.includes("con")?.5:0,f(){const m=pickAny();if(!m)return null;const c=Math.min(S.cash,20);S.cash-=c;S.vibes+=20;return m.h+" got a mohawk at Mohawk Con for charity. It looks incredible and terrible.";}},
   {w:t=>(t.includes("con")&&!S.lockpick)?.7:0,f(){S.lockpick=true;S.vibes+=8;if(chance(.4)&&!you().inj){you().inj="worn out fingertips";return "You sat down at Lockpick Village and picked locks for three hours straight. You can open a padlock now, but your fingertips are rubbed raw.";}return "You sat down at Lockpick Village and opened your first padlock. You feel unstoppable.";}},
   {w:t=>t.includes("con")?.5:0,f(){if(S.room>0){S.room--;return "A very friendly person at the Social Engineering Village talked you out of a hotel room key. You lost a room night.";}S.vibes-=5;return "Someone at the Social Engineering Village got your mother's maiden name in under a minute.";}},
-  {w:t=>t.includes("casino")?.7:.2,f(){present().forEach(m=>m.hp-=4);return "Every elevator is full of hackers. You take the stairs. Many, many stairs.";}},
+  {w:t=>t.includes("casino")?.7:.2,f(){present().forEach(m=>m.hp-=4);return "Every down elevator is full of hackers. You forgot to go up to go down, so you took the stairs. Many, many stairs.";}},
   {w:t=>.5,f(){const c=Math.min(S.cash,R(30,70));S.cash-=c;return "Rideshare surge pricing during the con. You paid $"+c+" to go a mile.";}},
   {w:t=>1,f(){chargePhone(40);return "You found a working outlet behind a slot machine. Your phone soaked up some charge.";}},
   {w:t=>.4,f(){chargePhone(50);S.vibes-=5;return "A free phone charging kiosk. At DEF CON. You plugged in anyway. Your phone charged and now it shows a skull on boot.";}},
@@ -634,6 +635,10 @@ function special(l){
       {t:"Ride the High Roller",s:"$45. Thirty minutes of views and drinks.",main:true,fn:()=>{const c=Math.min(S.cash,45);S.cash-=c;S.vibes=clamp(S.vibes+15,0,100);S.drinks+=2;drainPhone(10);note("You rode the High Roller with a cabin full of hackers. You took way too many photos.");}},
       {t:"Skip it",fn:()=>{}}
     ]);
+  }else if(l.special==="suites"){
+    S.drinks+=3;S.stickers+=R(5,12);S.vibes=clamp(S.vibes+8,0,100);
+    note("You hit three suite parties on the top floors. Free drinks, stickers on every door, and a guy giving a talk from a bathtub.","PARTY SUITES");
+    elevator("You are way up in the hotel tower.");
   }else if(l.special==="circle"){
     S.vibes=clamp(S.vibes+8,0,100);
     let x="The Circle Bar is packed with hackers.";
@@ -664,6 +669,25 @@ function crossing(l){
   modal(l.n.toUpperCase(),"<p>"+l.d+"</p><p>How do you get across?</p>",opts);
 }
 
+function elevator(where,after){
+  const done=()=>{if(after)after();};
+  modal("ELEVATOR BANK","<p>"+where+" Every down elevator that opens is already packed to the max. Nobody is getting on.</p>",[
+    {t:"Wait for a down elevator",s:"Surely the next one has room.",fn:()=>{
+      if(chance(.15)){note("A miracle. A down elevator opened with room for your whole crew.");done();return;}
+      S.vibes=clamp(S.vibes-8,0,100);drainPhone(6);
+      note("Down elevator after down elevator opens full. Forty minutes later you are still standing in the hallway staring at the button.");tick("act");done();}},
+    {t:"Go up to go down",s:"Ride up to the top, stay on, ride back down.",fn:()=>{
+      S.upDown=(S.upDown||0)+1;S.vibes=clamp(S.vibes+4,0,100);
+      if(chance(.9))note("You got on an up elevator, rode it to the top floor, and never got off. When it came back down you were already inside. Go up to go down. Pro move.");
+      else note("You went up to go down, but the elevator went up to go down with forty other hackers who had the same idea. Still faster than waiting.");
+      done();}},
+    {t:"Take the stairs",s:"A lot of floors. A lot.",fn:()=>{
+      present().forEach(m=>m.hp=clamp(m.hp-10,0,100));
+      let x="You took the stairs down more floors than you want to count. Your legs are shaking.";
+      if(chance(.35)&&!you().inj){you().inj="foot blisters";x+=" Now you have blisters too.";}
+      note(x);done();}}
+  ]);
+}
 function actCharge(){
   const b=[];
   b.push({t:"Use a power bank",s:S.banks+" bank"+(S.banks===1?"":"s")+", "+S.cables+" cable"+(S.cables===1?"":"s")+". Adds a big charge.",fn:()=>{
@@ -800,7 +824,9 @@ function goParty(p){
   if(chance(.25)){const m=pickFriend();if(m){m.lost=true;out.push(m.h+" left with a group headed to another party and stopped answering.");}}
   const t=p.n+". "+out.join(" ");
   log(t);
-  modal(p.n.toUpperCase(),"<p>"+out.join("</p><p>")+"</p>",[{t:"OK",main:true,fn:()=>{tick("party");}}]);
+  const tower=["vroof","suite","phreak"].indexOf(p.id)>=0;
+  modal(p.n.toUpperCase(),"<p>"+out.join("</p><p>")+"</p>",[{t:tower?"Head back down":"OK",main:true,fn:()=>{
+    if(tower)elevator("The party was way up in the tower.",()=>tick("party"));else tick("party");}}]);
 }
 
 /* ---------- gambling ---------- */
@@ -935,6 +961,7 @@ function score(){
   let s=S.shirts*2+S.stickers+S.sao*10+S.badges*25+S.celebs*20+S.parties.length*15+surv*50+Math.floor(S.cash/10)+Math.floor(phoneCharge()/5);
   if(S.at>=L.length-1)s+=100;
   if(S.blackBadge)s+=300;
+  s+=(S.upDown||0)*10;
   const gs={};S.party.forEach(m=>{if(m.g)gs[m.g]=1;});s+=Object.keys(gs).length*15;
   return s*S.mult;
 }
